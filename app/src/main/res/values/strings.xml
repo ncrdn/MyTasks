@@ -1,0 +1,240 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">MyTasks</string>
+
+    <!-- Types de tâches par défaut (modifiables par l'utilisateur) -->
+    <string name="type_domestic">Tâches domestiques</string>
+    <string name="type_oneoff">Tâches ponctuelles</string>
+    <string name="type_worksite">Chantiers</string>
+    <string name="type_project">Projets</string>
+
+    <string-array name="default_rooms">
+        <item>Cuisine</item>
+        <item>Salon</item>
+        <item>Salle de bain</item>
+        <item>Chambre</item>
+        <item>Couloir</item>
+        <item>Bureau</item>
+        <item>Extérieur</item>
+    </string-array>
+
+    <!-- Général -->
+    <string name="tab_dashboard">Tableau de bord</string>
+    <string name="settings">Réglages</string>
+    <string name="back">Retour</string>
+    <string name="cancel">Annuler</string>
+    <string name="ok">OK</string>
+    <string name="save">Enregistrer</string>
+    <string name="add">Ajouter</string>
+    <string name="search">Rechercher</string>
+    <string name="search_by_title">Rechercher par titre</string>
+    <string name="loading">Chargement…</string>
+    <string name="empty_list">Aucune tâche à afficher.</string>
+    <string name="error_required">Champ obligatoire</string>
+    <string name="task_not_found">Tâche introuvable.</string>
+    <string name="paused">En pause</string>
+    <string name="late_label">En retard</string>
+    <string name="days_unit">jours</string>
+
+    <!-- Statuts -->
+    <string name="status_todo">À faire</string>
+    <string name="status_done">Faite</string>
+    <string name="status_postponed">Reportée</string>
+    <string name="status_abandoned">Abandonnée</string>
+
+    <!-- Échéances -->
+    <string name="due_today">Aujourd\'hui</string>
+    <string name="due_tomorrow">Demain</string>
+    <string name="due_in_days">Dans %1$d j · %2$s</string>
+    <string name="due_late_days">En retard de %1$d j</string>
+    <string name="before_end_of">avant fin %1$d</string>
+    <string name="per_week">%1$s / semaine</string>
+    <string name="progress_minutes">%1$s / %2$s</string>
+    <string name="catch_up">dont %1$s à rattraper</string>
+    <string name="effort_short">Effort %1$d/10</string>
+    <string name="priority_short">Priorité %1$d/5</string>
+    <string name="effort_value">%1$d/10</string>
+    <string name="priority_value">%1$d/5</string>
+
+    <!-- Filtres et tris -->
+    <string name="filter_active">À faire</string>
+    <string name="filter_all">Toutes</string>
+    <string name="filter_done">Faites</string>
+    <string name="filter_abandoned">Abandonnées</string>
+    <string name="filter_room">Pièce</string>
+    <string name="all_rooms">Toutes les pièces</string>
+    <string name="filter_priority">Priorité</string>
+    <string name="all_priorities">Toutes priorités</string>
+    <string name="priority_at_least">Priorité ≥ %1$d</string>
+    <string name="period_all">Toute période</string>
+    <string name="period_overdue">En retard</string>
+    <string name="period_today">Aujourd\'hui</string>
+    <string name="period_week">Cette semaine</string>
+    <string name="period_month">Ce mois-ci</string>
+    <string name="sort_by">Tri : %1$s</string>
+    <string name="sort_due">Échéance</string>
+    <string name="sort_room">Pièce</string>
+    <string name="sort_priority">Priorité</string>
+    <string name="sort_year">Année visée</string>
+    <string name="sort_goal">Objectif non atteint</string>
+    <string name="history_collapsible">Terminées et abandonnées (%1$d)</string>
+
+    <!-- Actions -->
+    <string name="action_mark_done">Marquer comme faite</string>
+    <string name="action_edit">Modifier</string>
+    <string name="action_delete">Supprimer</string>
+    <string name="action_postpone">Reporter</string>
+    <string name="action_skip">Ignorer cette fois</string>
+    <string name="action_pause">Mettre en pause</string>
+    <string name="action_resume">Réactiver</string>
+    <string name="action_abandon">Abandonner</string>
+    <string name="action_reopen">Rouvrir</string>
+    <string name="finish_entirely">Fait entièrement</string>
+    <string name="finish_project">Terminer le projet</string>
+    <string name="log_session">Enregistrer une session</string>
+    <string name="log_time">Enregistrer du temps</string>
+    <string name="worksite_complete_prompt">Ce chantier est-il terminé, ou souhaitez-vous seulement enregistrer une session de travail ?</string>
+    <string name="delete_title">Supprimer la tâche ?</string>
+    <string name="delete_message">La tâche et son historique seront définitivement supprimés.</string>
+    <string name="abandon_title">Abandonner la tâche ?</string>
+    <string name="abandon_message">Elle sera archivée comme abandonnée. Vous pourrez la rouvrir.</string>
+
+    <!-- Détail -->
+    <string name="field_room">Pièce</string>
+    <string name="field_recurrence">Récurrence</string>
+    <string name="field_next_due">Prochaine échéance</string>
+    <string name="field_due">Échéance</string>
+    <string name="field_duration">Durée estimée</string>
+    <string name="field_next_calc">Calcul de la suivante</string>
+    <string name="field_place">Lieu</string>
+    <string name="field_effort">Effort estimé</string>
+    <string name="field_priority">Priorité</string>
+    <string name="field_target_year">Année visée</string>
+    <string name="field_sessions">Sessions de travail</string>
+    <string name="field_weekly_goal">Objectif hebdomadaire</string>
+    <string name="field_weekly_goal_min">Objectif hebdomadaire</string>
+    <string name="field_created">Créée le</string>
+    <string name="field_closed">Clôturée le</string>
+    <string name="field_notes">Notes</string>
+    <string name="field_object">Objet</string>
+    <string name="field_project_name">Nom du projet</string>
+    <string name="field_date">Date</string>
+    <string name="field_minutes">Temps passé</string>
+    <string name="field_minutes_optional">Durée (facultatif)</string>
+    <string name="field_comment">Commentaire (facultatif)</string>
+    <string name="anchor_completion">À partir de la date de complétion</string>
+    <string name="anchor_theoretical">À partir de la date théorique</string>
+    <string name="this_week">Cette semaine</string>
+    <string name="history">Historique</string>
+    <string name="history_empty">Aucun événement pour le moment.</string>
+    <string name="event_created">Créée</string>
+    <string name="event_done">Faite</string>
+    <string name="event_skipped">Occurrence ignorée</string>
+    <string name="event_postponed">Reportée</string>
+    <string name="event_abandoned">Abandonnée</string>
+    <string name="event_reopened">Rouverte</string>
+    <string name="event_session">Session</string>
+    <string name="event_paused">Mise en pause</string>
+    <string name="event_resumed">Réactivée</string>
+
+    <!-- Formulaire -->
+    <string name="new_task_title">Nouveau · %1$s</string>
+    <string name="edit_task_title">Modifier · %1$s</string>
+    <string name="no_room">Aucune</string>
+    <string name="anchor_option">Caler sur la date théorique</string>
+    <string name="anchor_option_help">Sinon, la prochaine occurrence est calculée depuis la date de complétion.</string>
+    <string name="effort_label">Effort estimé : %1$d/10</string>
+    <string name="effort_help">1 = rapide / anodin, 10 = très long / lourd</string>
+    <string name="priority_label">Priorité : %1$d/5</string>
+    <string name="priority_help">1 = faible, 5 = critique</string>
+
+    <!-- Récurrence -->
+    <string name="rec_none">Ne se répète pas</string>
+    <string name="rec_weekly">Hebdomadaire</string>
+    <string name="rec_monthly_day">Mensuelle : le N du mois</string>
+    <string name="rec_monthly_nth">Mensuelle : le Nᵉ jour de semaine</string>
+    <string name="rec_yearly">Annuelle</string>
+    <string name="rec_custom">Personnalisée</string>
+    <string name="rec_every_n_weeks">Toutes les N semaines</string>
+    <string name="rec_day_of_month">Jour du mois</string>
+    <string name="rec_nth">Rang</string>
+    <string name="rec_weekday">Jour</string>
+    <string name="rec_day">Jour</string>
+    <string name="rec_month">Mois</string>
+    <string name="rec_every_n_days">Tous les N jours</string>
+    <string name="rec_last">dernier</string>
+    <string name="rec_nth_value">%1$de</string>
+    <string name="rec_weekly_desc">Chaque semaine : %1$s</string>
+    <string name="rec_weekly_n_desc">Toutes les %1$d semaines : %2$s</string>
+    <string name="rec_monthly_day_desc">Le %1$d du mois</string>
+    <string name="rec_monthly_day_n_desc">Tous les %1$d mois, le %2$d</string>
+    <string name="rec_monthly_nth_desc">Le %1$s %2$s du mois</string>
+    <string name="rec_yearly_desc">Chaque année le %1$d %2$s</string>
+    <string name="rec_custom_desc">Tous les %1$d jours</string>
+
+    <!-- Tableau de bord -->
+    <string name="dash_today">Aujourd\'hui</string>
+    <string name="dash_today_empty">Rien de prévu aujourd\'hui.</string>
+    <string name="dash_overdue">Retards</string>
+    <string name="dash_overdue_empty">Aucun retard, bravo !</string>
+    <string name="dash_week_progress">Avancement de la semaine</string>
+    <string name="dash_domestic_progress">%1$d occurrence(s) faite(s) sur %2$d prévue(s)</string>
+    <string name="dash_no_project">Aucun projet en cours.</string>
+    <string name="dash_no_deadline">Aucune échéance annuelle proche.</string>
+    <string name="dash_deadline_line">%1$s (%2$d)</string>
+    <string name="deadline_under_3">&lt; 3 mois</string>
+    <string name="deadline_under_6">&lt; 6 mois</string>
+    <string name="dash_stats">Statistiques</string>
+    <string name="stat_7_days">Complétion 7 j</string>
+    <string name="stat_30_days">Complétion 30 j</string>
+    <plurals name="dash_sessions">
+        <item quantity="one">%d session enregistrée cette semaine</item>
+        <item quantity="other">%d sessions enregistrées cette semaine</item>
+    </plurals>
+    <plurals name="stat_streak">
+        <item quantity="one">jour actif d\'affilée</item>
+        <item quantity="other">jours actifs d\'affilée</item>
+    </plurals>
+
+    <!-- Réglages -->
+    <string name="settings_customize">Personnalisation</string>
+    <string name="settings_types">Types de tâches</string>
+    <string name="settings_types_help">Renommer les onglets, changer l\'icône et la couleur</string>
+    <string name="settings_rooms">Pièces de la maison</string>
+    <string name="settings_rooms_help">Ajouter, renommer ou supprimer des pièces</string>
+    <string name="settings_display">Affichage</string>
+    <string name="font_size">Taille du texte : %1$d %%</string>
+    <string name="font_size_sample">Exemple de texte à cette taille.</string>
+    <string name="settings_notifications">Rappels</string>
+    <string name="notif_enable">Activer les rappels</string>
+    <string name="notif_daily_time">Rappel quotidien</string>
+    <string name="notif_due_eve">Prévenir la veille d\'une échéance</string>
+    <string name="notif_weekly">Alerte hebdomadaire des projets</string>
+    <string name="notif_weekly_time">Heure de l\'alerte (dimanche)</string>
+    <string name="settings_data">Données</string>
+    <string name="settings_data_help">Sauvegardez vos données dans un fichier JSON, ou restaurez-les sur une autre installation.</string>
+    <string name="export_json">Exporter en JSON</string>
+    <string name="import_json">Importer un fichier JSON</string>
+    <string name="import_warning">L\'import remplace toutes les données actuelles par celles du fichier.</string>
+    <string name="import_confirm">Remplacer</string>
+    <string name="msg_exported">Sauvegarde exportée.</string>
+    <string name="msg_imported">Données importées.</string>
+    <string name="msg_error">Opération impossible : fichier invalide ou inaccessible.</string>
+    <string name="type_name">Intitulé</string>
+    <string name="type_icon">Icône</string>
+    <string name="type_color">Couleur</string>
+    <string name="room_name">Nom de la pièce</string>
+    <string name="delete_room_title">Supprimer « %1$s » ?</string>
+    <string name="delete_room_message">Les tâches associées ne seront pas supprimées, elles n\'auront simplement plus de pièce.</string>
+
+    <!-- Notifications -->
+    <string name="notif_channel">Rappels de tâches</string>
+    <string name="notif_daily_title">Aujourd\'hui : %1$d à faire</string>
+    <string name="notif_line_type">%1$s : %2$d</string>
+    <string name="notif_line_overdue">En retard : %1$d</string>
+    <string name="notif_eve_title">Échéance demain</string>
+    <string name="notif_worksite_title">Chantiers à relancer</string>
+    <string name="notif_worksite_line">%1$s : échéance dans %2$d j, sans session récente</string>
+    <string name="notif_weekly_title">Objectifs hebdomadaires à terminer</string>
+    <string name="notif_weekly_line">%1$s : encore %2$s</string>
+</resources>
