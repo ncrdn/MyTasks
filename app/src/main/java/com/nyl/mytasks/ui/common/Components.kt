@@ -77,6 +77,7 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.nyl.mytasks.R
 import com.nyl.mytasks.domain.ProjectWeek
 import com.nyl.mytasks.domain.Task
@@ -154,7 +155,10 @@ fun ScreenHeader(
             if (subtitle != null) {
                 Text(subtitle, style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
-            Text(title, style = com.nyl.mytasks.ui.theme.ScreenTitleStyle, maxLines = 1, overflow = TextOverflow.Ellipsis)
+            val base = com.nyl.mytasks.ui.theme.ScreenTitleStyle
+            // Les noms d'onglets sont personnalisables : un titre long passe en plus petit et sur 2 lignes.
+            val style = if (title.length > 14) base.copy(fontSize = 24.sp, lineHeight = 28.sp) else base
+            Text(title, style = style, maxLines = 2, overflow = TextOverflow.Ellipsis)
         }
         actions()
     }
@@ -291,7 +295,7 @@ fun TaskCard(
                 if (sub.isNotBlank()) {
                     Text(
                         sub, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        maxLines = 2, overflow = TextOverflow.Ellipsis,
+                        maxLines = 3, overflow = TextOverflow.Ellipsis,
                     )
                 }
                 if (kind == TaskKind.PROJECT && project != null && active) {
@@ -309,15 +313,13 @@ fun TaskCard(
                 if (!active) {
                     Text(statusLabel(task.status), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
-            }
-            Column(horizontalAlignment = Alignment.End) {
+                // Échéance / retard sous le texte (et non à côté) pour laisser toute la largeur au titre.
                 if (late) {
                     val days = daysLateOverride ?: due?.let { java.time.temporal.ChronoUnit.DAYS.between(it, today).toInt() } ?: 0
+                    Spacer(Modifier.height(6.dp))
                     OverduePill(if (kind == TaskKind.PROJECT) stringResource(R.string.late_label) else stringResource(R.string.due_late_days, days.coerceAtLeast(1)))
                 } else if (active && due != null && kind != TaskKind.PROJECT && kind != TaskKind.WORKSITE) {
                     Text(describeDue(context, due, today), style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                } else if (active && kind == TaskKind.WORKSITE && due != null) {
-                    Text(stringResource(R.string.before_end_of, due.year), style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
             }
             if (onComplete != null && active) {

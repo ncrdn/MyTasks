@@ -7,6 +7,9 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.RowScope
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -77,16 +80,16 @@ private object Routes {
 }
 
 @Composable
-private fun NavPill(selected: Boolean, icon: ImageVector, label: String, onClick: () -> Unit) {
+private fun RowScope.NavPill(selected: Boolean, icon: ImageVector, label: String, onClick: () -> Unit) {
     val shape = RoundedCornerShape(24.dp)
+    // L'onglet actif prend toute la place restante : son intitulé s'affiche en entier (2 lignes au besoin).
     Row(
-        Modifier
-            .height(48.dp)
-            .widthIn(min = 48.dp, max = 124.dp)
+        (if (selected) Modifier.weight(1f) else Modifier.width(42.dp))
+            .heightIn(min = 52.dp)
             .clip(shape)
             .background(if (selected) Color.White else Color.Transparent)
             .selectable(selected = selected, role = Role.Tab, onClick = onClick)
-            .padding(horizontal = if (selected) 12.dp else 8.dp)
+            .padding(horizontal = if (selected) 10.dp else 0.dp, vertical = 4.dp)
             .semantics { contentDescription = label },
         horizontalArrangement = Arrangement.Center,
         verticalAlignment = Alignment.CenterVertically,
@@ -94,8 +97,8 @@ private fun NavPill(selected: Boolean, icon: ImageVector, label: String, onClick
         Icon(icon, contentDescription = null, tint = if (selected) Palette.Ink else Color(0xFFB9B7DA), modifier = Modifier.size(22.dp))
         if (selected) {
             Text(
-                label, Modifier.padding(start = 8.dp), color = Palette.Ink, maxLines = 1, overflow = TextOverflow.Ellipsis,
-                style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.Bold,
+                label, Modifier.padding(start = 6.dp).weight(1f, fill = false), color = Palette.Ink, maxLines = 2,
+                overflow = TextOverflow.Ellipsis, fontSize = 11.sp, lineHeight = 13.sp, fontWeight = FontWeight.Bold,
             )
         }
     }
@@ -140,8 +143,8 @@ fun AppRoot(vm: AppViewModel) {
                     shadowElevation = 12.dp,
                 ) {
                     Row(
-                        Modifier.fillMaxWidth().height(68.dp).padding(horizontal = 8.dp),
-                        horizontalArrangement = Arrangement.SpaceBetween,
+                        Modifier.fillMaxWidth().heightIn(min = 68.dp).padding(horizontal = 8.dp, vertical = 8.dp),
+                        horizontalArrangement = Arrangement.spacedBy(2.dp),
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
                         NavPill(
