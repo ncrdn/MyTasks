@@ -78,10 +78,11 @@ fun AppRoot(vm: AppViewModel) {
         }
     }
 
+    // Tous les onglets de types partagent la route « type/{typeId} » : on ne sauvegarde/restaure donc pas
+    // l'état de la pile (il restaurerait toujours le premier type visité), on repart du tableau de bord.
     fun goTab(r: String) = nav.navigate(r) {
-        popUpTo(nav.graph.findStartDestination().id) { saveState = true }
+        popUpTo(nav.graph.findStartDestination().id)
         launchSingleTop = true
-        restoreState = true
     }
 
     Scaffold(
