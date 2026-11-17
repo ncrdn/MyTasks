@@ -45,6 +45,13 @@ import com.nyl.mytasks.ui.common.CompletionDialogs
 import com.nyl.mytasks.ui.common.EmptyState
 import com.nyl.mytasks.ui.common.OverduePill
 import com.nyl.mytasks.ui.common.PendingCompletion
+import com.nyl.mytasks.ui.common.RoundAction
+import com.nyl.mytasks.ui.common.ScreenHeader
+import com.nyl.mytasks.ui.theme.Palette
+import androidx.compose.foundation.background
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import com.nyl.mytasks.ui.common.SectionTitle
 import com.nyl.mytasks.ui.common.TaskCard
 import com.nyl.mytasks.ui.common.formatLong
@@ -69,18 +76,10 @@ fun DashboardScreen(
     Scaffold(
         contentWindowInsets = WindowInsets.statusBars,
         topBar = {
-            TopAppBar(
-                title = {
-                    Column {
-                        Text(stringResource(R.string.tab_dashboard))
-                        Text(today.formatLong(), style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                    }
-                },
-                actions = {
-                    IconButton(onClick = onOpenSettings) {
-                        Icon(Icons.Filled.Settings, contentDescription = stringResource(R.string.settings))
-                    }
-                },
+            ScreenHeader(
+                title = stringResource(R.string.tab_dashboard),
+                subtitle = today.formatLong(),
+                actions = { RoundAction(Icons.Filled.Settings, stringResource(R.string.settings), onOpenSettings) },
             )
         },
     ) { padding ->
@@ -92,8 +91,11 @@ fun DashboardScreen(
         LazyColumn(
             modifier = Modifier.padding(padding).fillMaxSize(),
             contentPadding = PaddingValues(start = 16.dp, end = 16.dp, bottom = 24.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp),
+            verticalArrangement = Arrangement.spacedBy(10.dp),
         ) {
+            // --- Statistiques (carte principale en tête) ---
+            item { Stats(s) }
+
             // --- Aujourd'hui ---
             item { SectionTitle(stringResource(R.string.dash_today), s.todayItems.size) }
             if (s.todayItems.isEmpty()) item { EmptyState(stringResource(R.string.dash_today_empty)) }
@@ -111,10 +113,6 @@ fun DashboardScreen(
             // --- Avancement de la semaine ---
             item { SectionTitle(stringResource(R.string.dash_week_progress)) }
             item { WeekProgress(s, types, onOpenTask) }
-
-            // --- Statistiques ---
-            item { SectionTitle(stringResource(R.string.dash_stats)) }
-            item { Stats(s) }
         }
     }
 
@@ -147,8 +145,12 @@ private fun WeekProgress(s: DashboardState, types: List<TaskType>, onOpenTask: (
     fun label(kind: TaskKind) = types.firstOrNull { it.kind == kind }?.label.orEmpty()
     fun color(kind: TaskKind) = (types.firstOrNull { it.kind == kind }?.color ?: 0xFF607D8B).toColor()
 
-    Card(Modifier.fillMaxWidth(), colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow)) {
-        Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
+    Card(
+        Modifier.fillMaxWidth(), shape = RoundedCornerShape(24.dp),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow),
+    ) {
+        Column(Modifier.padding(18.dp), verticalArrangement = Arrangement.spacedBy(18.dp)) {
             // Domestiques : X occurrences faites / Y prévues
             Column {
                 Text(label(TaskKind.DOMESTIC), style = MaterialTheme.typography.titleSmall, color = color(TaskKind.DOMESTIC))
@@ -213,19 +215,32 @@ private fun WeekProgress(s: DashboardState, types: List<TaskType>, onOpenTask: (
 
 @Composable
 private fun Stats(s: DashboardState) {
-    Card(Modifier.fillMaxWidth(), colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow)) {
-        Row(Modifier.padding(16.dp).fillMaxWidth(), horizontalArrangement = Arrangement.SpaceEvenly) {
-            StatBlock(s.rate7?.let { "$it %" } ?: "—", stringResource(R.string.stat_7_days))
-            StatBlock(s.rate30?.let { "$it %" } ?: "—", stringResource(R.string.stat_30_days))
-            StatBlock("${s.streak}", pluralStringResource(R.plurals.stat_streak, s.streak))
+    // Carte principale : indigo plein, texte blanc (contraste conservé en mode sombre via les couleurs fixes).
+    Card(
+        Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(28.dp),
+        colors = CardDefaults.cardColors(containerColor = Palette.Indigo, contentColor = Color.White),
+    ) {
+        Column(Modifier.padding(20.dp)) {
+            Text(stringResource(R.string.dash_stats), style = MaterialTheme.typography.labelLarge, color = Palette.OnIndigoMuted)
+            Row(Modifier.padding(top = 12.dp).fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                StatBlock(s.rate7?.let { "$it %" } ?: "—", stringResource(R.string.stat_7_days), Modifier.weight(1f))
+                StatBlock(s.rate30?.let { "$it %" } ?: "—", stringResource(R.string.stat_30_days), Modifier.weight(1f))
+                StatBlock("${s.streak}", pluralStringResource(R.plurals.stat_streak, s.streak), Modifier.weight(1.1f), highlighted = true)
+            }
         }
     }
 }
 
 @Composable
-private fun StatBlock(value: String, label: String) {
-    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-        Text(value, style = MaterialTheme.typography.headlineSmall, color = MaterialTheme.colorScheme.primary)
-        Text(label, style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+private fun StatBlock(value: String, label: String, modifier: Modifier = Modifier, highlighted: Boolean = false) {
+    Column(
+        modifier.then(
+            if (highlighted) Modifier.clip(RoundedCornerShape(18.dp)).background(Color.White.copy(alpha = 0.16f)).padding(horizontal = 12.dp, vertical = 8.dp)
+            else Modifier.padding(vertical = 8.dp),
+        ),
+    ) {
+        Text(value, style = MaterialTheme.typography.headlineMedium, color = Color.White, maxLines = 1)
+        Text(label, style = MaterialTheme.typography.labelMedium, color = Palette.OnIndigoMuted, maxLines = 2)
     }
 }

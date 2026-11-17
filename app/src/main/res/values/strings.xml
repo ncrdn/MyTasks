@@ -20,6 +20,7 @@
 
     <!-- Général -->
     <string name="tab_dashboard">Tableau de bord</string>
+    <string name="nav_home">Accueil</string>
     <string name="settings">Réglages</string>
     <string name="back">Retour</string>
     <string name="cancel">Annuler</string>

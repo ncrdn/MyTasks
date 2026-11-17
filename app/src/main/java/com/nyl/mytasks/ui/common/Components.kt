@@ -2,7 +2,10 @@ package com.nyl.mytasks.ui.common
 
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.material.icons.filled.Check
+import androidx.compose.ui.graphics.compositeOver
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -13,6 +16,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
@@ -112,22 +116,61 @@ object IconCatalog {
     fun get(key: String): ImageVector = icons[key] ?: Icons.Filled.Checklist
 
     val colors: List<Long> = listOf(
-        0xFF00897B, 0xFFEF6C00, 0xFF6D4C41, 0xFF5E35B1, 0xFF1E88E5, 0xFFD81B60,
-        0xFF43A047, 0xFFF9A825, 0xFF546E7A, 0xFFC62828,
+        0xFF0F9D8A, 0xFFE08A00, 0xFFD6409F, 0xFF1D8FE1, 0xFF4F46E5, 0xFFD92D3A,
+        0xFF43A047, 0xFF8E5CF7, 0xFF546E7A, 0xFF8D6E63,
     )
 }
 
 fun Long.toColor(): Color = Color(this.toInt())
 
 @Composable
-fun TypeBadge(type: TaskType?, size: Int = 40) {
+fun TypeBadge(type: TaskType?, size: Int = 46) {
     val color = (type?.color ?: 0xFF607D8B).toColor()
     Box(
-        modifier = Modifier.size(size.dp).clip(CircleShape).background(color.copy(alpha = 0.18f)),
+        modifier = Modifier.size(size.dp).clip(RoundedCornerShape((size * 0.32f).dp)).background(color.copy(alpha = 0.16f)),
         contentAlignment = Alignment.Center,
     ) {
-        Icon(IconCatalog.get(type?.iconKey ?: ""), contentDescription = null, tint = color, modifier = Modifier.size((size * 0.55f).dp))
+        Icon(IconCatalog.get(type?.iconKey ?: ""), contentDescription = null, tint = color, modifier = Modifier.size((size * 0.52f).dp))
     }
+}
+
+/** En-tête d'écran moderne : sous-titre discret, grand titre et actions dans des pastilles rondes. */
+@Composable
+fun ScreenHeader(
+    title: String,
+    subtitle: String? = null,
+    leading: (@Composable () -> Unit)? = null,
+    actions: @Composable () -> Unit = {},
+) {
+    Row(
+        Modifier.fillMaxWidth().statusBarsPadding().padding(start = 20.dp, end = 16.dp, top = 12.dp, bottom = 8.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        if (leading != null) {
+            leading()
+            Spacer(Modifier.size(12.dp))
+        }
+        Column(Modifier.weight(1f)) {
+            if (subtitle != null) {
+                Text(subtitle, style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            }
+            Text(title, style = com.nyl.mytasks.ui.theme.ScreenTitleStyle, maxLines = 1, overflow = TextOverflow.Ellipsis)
+        }
+        actions()
+    }
+}
+
+/** Bouton d'action rond posé sur une pastille blanche. */
+@Composable
+fun RoundAction(icon: ImageVector, description: String, onClick: () -> Unit) {
+    androidx.compose.material3.FilledTonalIconButton(
+        onClick = onClick,
+        modifier = Modifier.size(46.dp),
+        colors = androidx.compose.material3.IconButtonDefaults.filledTonalIconButtonColors(
+            containerColor = MaterialTheme.colorScheme.surfaceContainerLow,
+            contentColor = MaterialTheme.colorScheme.onSurface,
+        ),
+    ) { Icon(icon, contentDescription = description) }
 }
 
 @Composable
@@ -148,8 +191,8 @@ fun OverduePill(text: String) =
 
 @Composable
 fun SectionTitle(text: String, count: Int? = null, modifier: Modifier = Modifier) {
-    Row(modifier.padding(top = 20.dp, bottom = 8.dp), verticalAlignment = Alignment.CenterVertically) {
-        Text(text, style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.primary)
+    Row(modifier.padding(start = 4.dp, top = 22.dp, bottom = 6.dp), verticalAlignment = Alignment.CenterVertically) {
+        Text(text, style = MaterialTheme.typography.titleLarge, color = MaterialTheme.colorScheme.onSurface)
         if (count != null) {
             Spacer(Modifier.size(8.dp))
             Pill("$count", MaterialTheme.colorScheme.primaryContainer, MaterialTheme.colorScheme.onPrimaryContainer)
@@ -217,12 +260,18 @@ fun TaskCard(
     Card(
         onClick = onClick,
         modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(22.dp),
+        elevation = CardDefaults.cardElevation(defaultElevation = if (active) 2.dp else 0.dp),
         colors = CardDefaults.cardColors(
-            containerColor = if (active) MaterialTheme.colorScheme.surfaceContainerLow else MaterialTheme.colorScheme.surfaceContainerLowest,
+            containerColor = when {
+                late -> MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.45f).compositeOver(MaterialTheme.colorScheme.surfaceContainerLow)
+                active -> MaterialTheme.colorScheme.surfaceContainerLow
+                else -> MaterialTheme.colorScheme.surfaceContainerLowest
+            },
         ),
     ) {
         Row(
-            Modifier.padding(start = 12.dp, top = 8.dp, bottom = 8.dp, end = 4.dp),
+            Modifier.padding(start = 14.dp, top = 12.dp, bottom = 12.dp, end = 8.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             TypeBadge(type)
@@ -273,8 +322,16 @@ fun TaskCard(
             }
             if (onComplete != null && active) {
                 val desc = stringResource(R.string.action_mark_done)
-                IconButton(onClick = onComplete, modifier = Modifier.size(48.dp).semantics { contentDescription = desc }) {
-                    Icon(Icons.Filled.RadioButtonUnchecked, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+                Box(
+                    Modifier.size(48.dp).clip(CircleShape).clickable(onClick = onComplete).semantics { contentDescription = desc },
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Box(
+                        Modifier.size(34.dp).clip(CircleShape).border(2.dp, MaterialTheme.colorScheme.outlineVariant, CircleShape),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        Icon(Icons.Filled.Check, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(20.dp))
+                    }
                 }
             } else if (!active && task.status == TaskStatus.DONE) {
                 Icon(Icons.Filled.CheckCircle, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.padding(end = 12.dp))

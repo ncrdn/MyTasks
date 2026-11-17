@@ -43,10 +43,10 @@ class MyTasksApp : Application() {
 
     /** Catalogue initial : les intitulés viennent des ressources (modifiables ensuite par l'utilisateur). */
     private fun defaultTypes() = listOf(
-        TaskType("domestic", TaskKind.DOMESTIC, getString(R.string.type_domestic), "cleaning", 0xFF00897B, 0),
-        TaskType("oneoff", TaskKind.ONE_OFF, getString(R.string.type_oneoff), "event", 0xFFEF6C00, 1),
-        TaskType("worksite", TaskKind.WORKSITE, getString(R.string.type_worksite), "construction", 0xFF6D4C41, 2),
-        TaskType("project", TaskKind.PROJECT, getString(R.string.type_project), "flag", 0xFF5E35B1, 3),
+        TaskType("domestic", TaskKind.DOMESTIC, getString(R.string.type_domestic), "cleaning", 0xFF0F9D8A, 0),
+        TaskType("oneoff", TaskKind.ONE_OFF, getString(R.string.type_oneoff), "event", 0xFFE08A00, 1),
+        TaskType("worksite", TaskKind.WORKSITE, getString(R.string.type_worksite), "construction", 0xFFD6409F, 2),
+        TaskType("project", TaskKind.PROJECT, getString(R.string.type_project), "flag", 0xFF1D8FE1, 3),
     )
 
     private fun defaultRooms() = resources.getStringArray(R.array.default_rooms)

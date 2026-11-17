@@ -48,6 +48,9 @@ import com.nyl.mytasks.ui.common.CompletionDialogs
 import com.nyl.mytasks.ui.common.DropdownChip
 import com.nyl.mytasks.ui.common.EmptyState
 import com.nyl.mytasks.ui.common.PendingCompletion
+import com.nyl.mytasks.ui.common.RoundAction
+import com.nyl.mytasks.ui.common.ScreenHeader
+import androidx.compose.foundation.shape.RoundedCornerShape
 import com.nyl.mytasks.ui.common.TaskCard
 import com.nyl.mytasks.ui.common.TypeBadge
 import java.time.LocalDate
@@ -126,20 +129,14 @@ fun TypeTabScreen(
     Scaffold(
         contentWindowInsets = WindowInsets.statusBars,
         topBar = {
-            TopAppBar(
-                title = {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        TypeBadge(type, size = 32)
-                        Text(type.label, modifier = Modifier.padding(start = 12.dp))
-                    }
-                },
+            ScreenHeader(
+                title = type.label,
+                leading = { TypeBadge(type, size = 46) },
                 actions = {
-                    IconButton(onClick = { searching = !searching; if (!searching) query = "" }) {
-                        Icon(
-                            if (searching) Icons.Filled.Close else Icons.Filled.Search,
-                            contentDescription = stringResource(R.string.search),
-                        )
-                    }
+                    RoundAction(
+                        if (searching) Icons.Filled.Close else Icons.Filled.Search,
+                        stringResource(R.string.search),
+                    ) { searching = !searching; if (!searching) query = "" }
                 },
             )
         },
@@ -148,6 +145,9 @@ fun TypeTabScreen(
                 onClick = { onAdd(typeId) },
                 icon = { Icon(Icons.Filled.Add, contentDescription = null) },
                 text = { Text(stringResource(R.string.add)) },
+                shape = RoundedCornerShape(22.dp),
+                containerColor = MaterialTheme.colorScheme.primary,
+                contentColor = MaterialTheme.colorScheme.onPrimary,
             )
         },
     ) { padding ->

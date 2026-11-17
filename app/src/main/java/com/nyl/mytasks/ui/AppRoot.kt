@@ -4,16 +4,34 @@ import android.Manifest
 import android.os.Build
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.selection.selectable
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Dashboard
 import androidx.compose.material3.Icon
-import androidx.compose.material3.NavigationBar
-import androidx.compose.material3.NavigationBarItem
-import androidx.compose.material3.NavigationBarItemDefaults
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.font.FontWeight
+import com.nyl.mytasks.ui.theme.Palette
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -59,6 +77,31 @@ private object Routes {
 }
 
 @Composable
+private fun NavPill(selected: Boolean, icon: ImageVector, label: String, onClick: () -> Unit) {
+    val shape = RoundedCornerShape(24.dp)
+    Row(
+        Modifier
+            .height(48.dp)
+            .widthIn(min = 48.dp, max = 124.dp)
+            .clip(shape)
+            .background(if (selected) Color.White else Color.Transparent)
+            .selectable(selected = selected, role = Role.Tab, onClick = onClick)
+            .padding(horizontal = if (selected) 12.dp else 8.dp)
+            .semantics { contentDescription = label },
+        horizontalArrangement = Arrangement.Center,
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Icon(icon, contentDescription = null, tint = if (selected) Palette.Ink else Color(0xFFB9B7DA), modifier = Modifier.size(22.dp))
+        if (selected) {
+            Text(
+                label, Modifier.padding(start = 8.dp), color = Palette.Ink, maxLines = 1, overflow = TextOverflow.Ellipsis,
+                style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.Bold,
+            )
+        }
+    }
+}
+
+@Composable
 fun AppRoot(vm: AppViewModel) {
     val nav = rememberNavController()
     val types by vm.types.collectAsStateWithLifecycle()
@@ -89,22 +132,33 @@ fun AppRoot(vm: AppViewModel) {
         contentWindowInsets = WindowInsets(0, 0, 0, 0),
         bottomBar = {
             if (showBar) {
-                NavigationBar {
-                    NavigationBarItem(
-                        selected = route == Routes.DASHBOARD,
-                        onClick = { goTab(Routes.DASHBOARD) },
-                        icon = { Icon(Icons.Filled.Dashboard, contentDescription = null) },
-                        label = { Text(stringResource(R.string.tab_dashboard), fontSize = 10.sp, lineHeight = 11.sp, maxLines = 2, textAlign = androidx.compose.ui.text.style.TextAlign.Center, overflow = TextOverflow.Ellipsis) },
-                        colors = NavigationBarItemDefaults.colors(),
-                    )
-                    // Les onglets de types suivent le catalogue : intitulés, icônes et couleurs personnalisés.
-                    types.forEach { type ->
-                        NavigationBarItem(
-                            selected = route == Routes.TYPE && currentTypeId == type.id,
-                            onClick = { goTab(Routes.type(type.id)) },
-                            icon = { Icon(IconCatalog.get(type.iconKey), contentDescription = null) },
-                            label = { Text(type.label, fontSize = 10.sp, lineHeight = 11.sp, maxLines = 2, textAlign = androidx.compose.ui.text.style.TextAlign.Center, overflow = TextOverflow.Ellipsis) },
+                // Barre flottante en pilule : seul l'onglet actif affiche son intitulé.
+                Surface(
+                    modifier = Modifier.navigationBarsPadding().padding(start = 16.dp, end = 16.dp, bottom = 12.dp, top = 4.dp),
+                    shape = RoundedCornerShape(34.dp),
+                    color = Palette.Ink,
+                    shadowElevation = 12.dp,
+                ) {
+                    Row(
+                        Modifier.fillMaxWidth().height(68.dp).padding(horizontal = 8.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        NavPill(
+                            selected = route == Routes.DASHBOARD,
+                            icon = Icons.Filled.Dashboard,
+                            label = stringResource(R.string.nav_home),
+                            onClick = { goTab(Routes.DASHBOARD) },
                         )
+                        // Les onglets de types suivent le catalogue : intitulés, icônes et couleurs personnalisés.
+                        types.forEach { type ->
+                            NavPill(
+                                selected = route == Routes.TYPE && currentTypeId == type.id,
+                                icon = IconCatalog.get(type.iconKey),
+                                label = type.label,
+                                onClick = { goTab(Routes.type(type.id)) },
+                            )
+                        }
                     }
                 }
             }
