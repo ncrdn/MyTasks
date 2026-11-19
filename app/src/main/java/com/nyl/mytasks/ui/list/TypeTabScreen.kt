@@ -291,7 +291,7 @@ fun TypeTabScreen(
                             if (roomYears.isEmpty()) stringResource(R.string.year_pending_help_none)
                             else stringResource(
                                 R.string.year_pending_help,
-                                roomYears.joinToString(" · ") { (y, free) -> context.getString(R.string.year_room_item, y, free) },
+                                roomYears.take(4).joinToString(" · ") { (y, free) -> context.getString(R.string.year_room_item, y, free) } + if (roomYears.size > 4) " …" else "",
                             ),
                             style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )

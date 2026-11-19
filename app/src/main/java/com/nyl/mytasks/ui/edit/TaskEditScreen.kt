@@ -229,7 +229,7 @@ fun TaskEditScreen(
                         if (yearsWithRoom.isEmpty()) stringResource(R.string.year_attach_none)
                         else stringResource(
                             R.string.year_room_hint,
-                            yearsWithRoom.joinToString(" · ") { y -> context.getString(R.string.year_room_item, y, freeIn(y)) },
+                            yearsWithRoom.take(4).joinToString(" · ") { y -> context.getString(R.string.year_room_item, y, freeIn(y)) } + if (yearsWithRoom.size > 4) " …" else "",
                         ),
                         style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
