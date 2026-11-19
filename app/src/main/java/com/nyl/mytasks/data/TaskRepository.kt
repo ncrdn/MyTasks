@@ -97,6 +97,19 @@ class TaskRepository(private val db: AppDatabase, private val clock: AppClock) {
 
     suspend fun saveType(type: TaskType) = types.upsert(type.toEntity())
 
+    /** Ordre par défaut des onglets : Projets avant Travaux (ordre initial inchangé → on l'échange). */
+    suspend fun swapDefaultWorksiteAndProject() {
+        db.withTransaction {
+            val all = types.getAll()
+            val worksite = all.firstOrNull { it.id == "worksite" }
+            val project = all.firstOrNull { it.id == "project" }
+            if (worksite != null && project != null && worksite.sortOrder == 2 && project.sortOrder == 3) {
+                types.upsert(worksite.copy(sortOrder = 3))
+                types.upsert(project.copy(sortOrder = 2))
+            }
+        }
+    }
+
     /** Applique un nouvel intitulé par défaut aux données créées avant le renommage (si l'utilisateur ne l'a pas personnalisé). */
     suspend fun renameTypeIfUnchanged(id: String, oldLabel: String, newLabel: String) {
         val type = types.getAll().firstOrNull { it.id == id } ?: return

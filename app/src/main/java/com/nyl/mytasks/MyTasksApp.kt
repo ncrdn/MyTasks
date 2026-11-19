@@ -27,6 +27,7 @@ class AppContainer(private val app: Application) {
     /** Intitulés par défaut renommés dans une version ultérieure (données déjà enregistrées ou importées). */
     suspend fun upgradeLegacyLabels() {
         repository.renameTypeIfUnchanged("domestic", "Tâches domestiques", app.getString(R.string.type_domestic))
+        repository.swapDefaultWorksiteAndProject()
     }
 }
 
@@ -51,8 +52,8 @@ class MyTasksApp : Application() {
     private fun defaultTypes() = listOf(
         TaskType("domestic", TaskKind.DOMESTIC, getString(R.string.type_domestic), "cleaning", 0xFF0F9D8A, 0),
         TaskType("oneoff", TaskKind.ONE_OFF, getString(R.string.type_oneoff), "event", 0xFFE08A00, 1),
-        TaskType("worksite", TaskKind.WORKSITE, getString(R.string.type_worksite), "construction", 0xFFD6409F, 2),
-        TaskType("project", TaskKind.PROJECT, getString(R.string.type_project), "flag", 0xFF1D8FE1, 3),
+        TaskType("project", TaskKind.PROJECT, getString(R.string.type_project), "flag", 0xFF1D8FE1, 2),
+        TaskType("worksite", TaskKind.WORKSITE, getString(R.string.type_worksite), "construction", 0xFFD6409F, 3),
     )
 
     private fun defaultRooms() = resources.getStringArray(R.array.default_rooms)
