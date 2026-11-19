@@ -11,6 +11,8 @@ import com.nyl.mytasks.domain.DashboardCalculator
 import com.nyl.mytasks.domain.DashboardState
 import com.nyl.mytasks.domain.HouseRoom
 import com.nyl.mytasks.domain.ProjectLogic
+import com.nyl.mytasks.domain.QuotaLogic
+import com.nyl.mytasks.domain.YearQuota
 import com.nyl.mytasks.domain.Task
 import com.nyl.mytasks.domain.TaskEvent
 import com.nyl.mytasks.ui.common.PendingCompletion
@@ -40,6 +42,17 @@ class AppViewModel(private val container: AppContainer) : ViewModel() {
     val events: StateFlow<List<TaskEvent>> = repo.eventsFlow.stateIn(viewModelScope, eager, emptyList())
     val today: StateFlow<LocalDate> = container.clock.today
     val settings: StateFlow<AppSettings> = container.settings.flow.stateIn(viewModelScope, eager, AppSettings())
+
+    val yearQuotas: StateFlow<List<YearQuota>> = repo.quotasFlow.stateIn(viewModelScope, eager, emptyList())
+
+    /** Quota applicable à une année : valeur définie, sinon valeur par défaut des réglages. */
+    fun quotaFor(year: Int): Int = QuotaLogic.quotaFor(year, yearQuotas.value, settings.value.defaultYearQuota)
+
+    /** Définit le quota d'une année ; [asDefault] le propose aussi aux années sans valeur propre. */
+    fun setYearQuota(year: Int, points: Int, asDefault: Boolean) = launch {
+        repo.setYearQuota(year, points)
+        if (asDefault) container.settings.update { it.copy(defaultYearQuota = points) }
+    }
 
     val eventsByTask: StateFlow<Map<String, List<TaskEvent>>> =
         events.map { list -> list.groupBy { it.taskId } }.stateIn(viewModelScope, eager, emptyMap())

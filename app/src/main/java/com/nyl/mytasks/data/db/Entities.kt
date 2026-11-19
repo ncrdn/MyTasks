@@ -11,6 +11,7 @@ import com.nyl.mytasks.domain.TaskEvent
 import com.nyl.mytasks.domain.TaskKind
 import com.nyl.mytasks.domain.TaskStatus
 import com.nyl.mytasks.domain.TaskType
+import com.nyl.mytasks.domain.YearQuota
 import java.time.LocalDate
 
 @Entity(tableName = "task_types")
@@ -62,7 +63,16 @@ data class EventEntity(
     val timestamp: Long,
 )
 
+@Entity(tableName = "year_quotas")
+data class YearQuotaEntity(
+    @PrimaryKey val year: Int,
+    val points: Int,
+)
+
 // --- Mappers entité <-> modèle de domaine ---
+
+fun YearQuotaEntity.toDomain() = YearQuota(year, points)
+fun YearQuota.toEntity() = YearQuotaEntity(year, points)
 
 fun TaskTypeEntity.toDomain() = TaskType(id, TaskKind.valueOf(kind), label, iconKey, color, sortOrder)
 fun TaskType.toEntity() = TaskTypeEntity(id, kind.name, label, iconKey, color, sortOrder)

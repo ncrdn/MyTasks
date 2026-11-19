@@ -12,9 +12,11 @@ data class BackupData(
     val rooms: List<HouseRoom>,
     val tasks: List<Task>,
     val events: List<TaskEvent>,
+    /** Quotas annuels de points d'effort (absent des sauvegardes de la version 1). */
+    val yearQuotas: List<YearQuota> = emptyList(),
 ) {
     companion object {
-        const val CURRENT_VERSION = 1
+        const val CURRENT_VERSION = 2
     }
 }
 

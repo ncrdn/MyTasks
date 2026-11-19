@@ -2,7 +2,7 @@
 <resources>
     <string name="app_name">MyTasks</string>
 
-    <!-- Types de tâches par défaut (modifiables par l'utilisateur) -->
+    <!-- Types de tâches par défaut (modifiables par l\x27utilisateur) -->
     <string name="type_domestic">Tâches récurrentes</string>
     <string name="type_oneoff">Tâches ponctuelles</string>
     <string name="type_worksite">Chantiers</string>
@@ -44,7 +44,7 @@
     <string name="status_abandoned">Abandonnée</string>
 
     <!-- Échéances -->
-    <string name="due_today">Aujourd\'hui</string>
+    <string name="due_today">Aujourd\\x27hui</string>
     <string name="due_tomorrow">Demain</string>
     <string name="due_in_days">Dans %1$d j · %2$s</string>
     <string name="due_late_days">En retard de %1$d j</string>
@@ -52,6 +52,30 @@
     <string name="per_week">%1$s / semaine</string>
     <string name="progress_minutes">%1$s / %2$s</string>
     <string name="catch_up">dont %1$s à rattraper</string>
+    <string name="year_title">Année %1$d</string>
+    <string name="year_previous">Année précédente</string>
+    <string name="year_next">Année suivante</string>
+    <string name="year_edit_quota">Modifier le quota</string>
+    <string name="year_quota">Quota</string>
+    <string name="year_committed">Engagés</string>
+    <string name="year_remaining">Restants</string>
+    <string name="year_over_quota">Quota dépassé : des points ont été engagés avant sa baisse.</string>
+    <string name="year_quota_dialog_title">Quota %1$d</string>
+    <string name="year_quota_as_default">Proposer cette valeur pour les autres années</string>
+    <string name="points_unit">pts</string>
+    <string name="year_attached">Rattachées à %1$d</string>
+    <string name="year_attached_empty">Aucune tâche rattachée à cette année.</string>
+    <string name="year_pending">En attente</string>
+    <string name="year_pending_help">Pas encore rattachées à une année. Points disponibles : %1$s</string>
+    <string name="year_pending_help_none">Pas encore rattachées à une année. Aucune année n\\x27a de points disponibles.</string>
+    <string name="year_room_item">%1$d : %2$d pts</string>
+    <string name="year_not_attached">Non rattaché (en attente)</string>
+    <string name="year_option">%1$d · %2$d pts restants</string>
+    <string name="year_no_room">Pas assez de points disponibles pour cette année (restants : %1$d).</string>
+    <string name="year_attach_none">Aucune année n\\x27a assez de points : la tâche restera en attente.</string>
+    <string name="year_room_hint">Points disponibles : %1$s</string>
+    <string name="field_points">Poids</string>
+    <string name="points_value">%1$d pts</string>
     <string name="effort_short">Effort %1$d/10</string>
     <string name="priority_short">Priorité %1$d/5</string>
     <string name="effort_value">%1$d/10</string>
@@ -69,7 +93,7 @@
     <string name="priority_at_least">Priorité ≥ %1$d</string>
     <string name="period_all">Toute période</string>
     <string name="period_overdue">En retard</string>
-    <string name="period_today">Aujourd\'hui</string>
+    <string name="period_today">Aujourd\\x27hui</string>
     <string name="period_week">Cette semaine</string>
     <string name="period_month">Ce mois-ci</string>
     <string name="sort_by">Tri : %1$s</string>
@@ -108,7 +132,7 @@
     <string name="field_duration">Durée estimée</string>
     <string name="field_next_calc">Calcul de la suivante</string>
     <string name="field_place">Lieu</string>
-    <string name="field_effort">Effort estimé</string>
+    <string name="field_effort">Points d\'effort</string>
     <string name="field_priority">Priorité</string>
     <string name="field_target_year">Année visée</string>
     <string name="field_sessions">Sessions de travail</string>
@@ -132,8 +156,8 @@
     <string name="event_done">Faite</string>
     <string name="event_skipped">Occurrence ignorée</string>
     <string name="delete_event_title">Supprimer cette entrée ?</string>
-    <string name="delete_event_message">Si c\'est la dernière action, la tâche reviendra à son état précédent (« à faire », prochaine échéance recalculée). Les compteurs et retards sont mis à jour.</string>
-    <string name="delete_event_message_session">La session sera retirée de l\'historique et les totaux de temps seront recalculés.</string>
+    <string name="delete_event_message">Si c\\x27est la dernière action, la tâche reviendra à son état précédent (« à faire », prochaine échéance recalculée). Les compteurs et retards sont mis à jour.</string>
+    <string name="delete_event_message_session">La session sera retirée de l\\x27historique et les totaux de temps seront recalculés.</string>
     <string name="event_postponed">Reportée</string>
     <string name="event_abandoned">Abandonnée</string>
     <string name="event_reopened">Rouverte</string>
@@ -147,8 +171,8 @@
     <string name="no_room">Aucune</string>
     <string name="anchor_option">Caler sur la date théorique</string>
     <string name="anchor_option_help">Sinon, la prochaine occurrence est calculée depuis la date de complétion.</string>
-    <string name="effort_label">Effort estimé : %1$d/10</string>
-    <string name="effort_help">1 = rapide / anodin, 10 = très long / lourd</string>
+    <string name="effort_label">Points d\'effort : %1$d</string>
+    <string name="effort_help">Poids de la tâche dans le quota annuel : 1 = léger, 10 = très lourd</string>
     <string name="priority_label">Priorité : %1$d/5</string>
     <string name="priority_help">1 = faible, 5 = critique</string>
 
@@ -177,8 +201,8 @@
     <string name="rec_custom_desc">Tous les %1$d jours</string>
 
     <!-- Tableau de bord -->
-    <string name="dash_today">Aujourd\'hui</string>
-    <string name="dash_today_empty">Rien de prévu aujourd\'hui.</string>
+    <string name="dash_today">Aujourd\\x27hui</string>
+    <string name="dash_today_empty">Rien de prévu aujourd\\x27hui.</string>
     <string name="dash_overdue">Retards</string>
     <string name="dash_overdue_empty">Aucun retard, bravo !</string>
     <string name="dash_week_progress">Avancement de la semaine</string>
@@ -196,14 +220,14 @@
         <item quantity="other">%d sessions enregistrées cette semaine</item>
     </plurals>
     <plurals name="stat_streak">
-        <item quantity="one">jour actif d\'affilée</item>
-        <item quantity="other">jours actifs d\'affilée</item>
+        <item quantity="one">jour actif d\\x27affilée</item>
+        <item quantity="other">jours actifs d\\x27affilée</item>
     </plurals>
 
     <!-- Réglages -->
     <string name="settings_customize">Personnalisation</string>
     <string name="settings_types">Types de tâches</string>
-    <string name="settings_types_help">Renommer les onglets, changer l\'icône et la couleur</string>
+    <string name="settings_types_help">Renommer les onglets, changer l\\x27icône et la couleur</string>
     <string name="settings_rooms">Pièces de la maison</string>
     <string name="settings_rooms_help">Ajouter, renommer ou supprimer des pièces</string>
     <string name="settings_display">Affichage</string>
@@ -212,14 +236,14 @@
     <string name="settings_notifications">Rappels</string>
     <string name="notif_enable">Activer les rappels</string>
     <string name="notif_daily_time">Rappel quotidien</string>
-    <string name="notif_due_eve">Prévenir la veille d\'une échéance</string>
+    <string name="notif_due_eve">Prévenir la veille d\\x27une échéance</string>
     <string name="notif_weekly">Alerte hebdomadaire des projets</string>
-    <string name="notif_weekly_time">Heure de l\'alerte (dimanche)</string>
+    <string name="notif_weekly_time">Heure de l\\x27alerte (dimanche)</string>
     <string name="settings_data">Données</string>
     <string name="settings_data_help">Sauvegardez vos données dans un fichier JSON, ou restaurez-les sur une autre installation.</string>
     <string name="export_json">Exporter en JSON</string>
     <string name="import_json">Importer un fichier JSON</string>
-    <string name="import_warning">L\'import remplace toutes les données actuelles par celles du fichier.</string>
+    <string name="import_warning">L\\x27import remplace toutes les données actuelles par celles du fichier.</string>
     <string name="import_confirm">Remplacer</string>
     <string name="msg_exported">Sauvegarde exportée.</string>
     <string name="msg_imported">Données importées.</string>
@@ -229,11 +253,11 @@
     <string name="type_color">Couleur</string>
     <string name="room_name">Nom de la pièce</string>
     <string name="delete_room_title">Supprimer « %1$s » ?</string>
-    <string name="delete_room_message">Les tâches associées ne seront pas supprimées, elles n\'auront simplement plus de pièce.</string>
+    <string name="delete_room_message">Les tâches associées ne seront pas supprimées, elles n\\x27auront simplement plus de pièce.</string>
 
     <!-- Notifications -->
     <string name="notif_channel">Rappels de tâches</string>
-    <string name="notif_daily_title">Aujourd\'hui : %1$d à faire</string>
+    <string name="notif_daily_title">Aujourd\\x27hui : %1$d à faire</string>
     <string name="notif_line_type">%1$s : %2$d</string>
     <string name="notif_line_overdue">En retard : %1$d</string>
     <string name="notif_eve_title">Échéance demain</string>

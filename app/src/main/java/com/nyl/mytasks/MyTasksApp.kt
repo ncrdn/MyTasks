@@ -6,6 +6,7 @@ import com.nyl.mytasks.data.AppClock
 import com.nyl.mytasks.data.SettingsRepository
 import com.nyl.mytasks.data.TaskRepository
 import com.nyl.mytasks.data.db.AppDatabase
+import com.nyl.mytasks.data.db.MIGRATION_1_2
 import com.nyl.mytasks.domain.HouseRoom
 import com.nyl.mytasks.domain.TaskKind
 import com.nyl.mytasks.domain.TaskType
@@ -20,7 +21,9 @@ import kotlinx.coroutines.launch
 /** Conteneur de dépendances (injection manuelle). */
 class AppContainer(private val app: Application) {
     val clock = AppClock()
-    private val db: AppDatabase = Room.databaseBuilder(app, AppDatabase::class.java, "mytasks.db").build()
+    private val db: AppDatabase = Room.databaseBuilder(app, AppDatabase::class.java, "mytasks.db")
+        .addMigrations(MIGRATION_1_2)
+        .build()
     val repository = TaskRepository(db, clock)
     val settings = SettingsRepository(app)
 

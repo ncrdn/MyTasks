@@ -21,6 +21,8 @@ data class AppSettings(
     val weeklyMinute: Int = 0,
     /** Multiplicateur de la taille de police (accessibilité). */
     val fontScale: Float = 1f,
+    /** Quota annuel de points d'effort proposé pour les années sans valeur propre. */
+    val defaultYearQuota: Int = 45,
 )
 
 private val Context.dataStore: DataStore<Preferences> by preferencesDataStore(name = "settings")
@@ -35,6 +37,7 @@ class SettingsRepository(private val context: Context) {
         val weeklyHour = intPreferencesKey("weekly_hour")
         val weeklyMinute = intPreferencesKey("weekly_minute")
         val fontScale = floatPreferencesKey("font_scale")
+        val defaultYearQuota = intPreferencesKey("default_year_quota")
     }
 
     val flow: Flow<AppSettings> = context.dataStore.data.map { p ->
@@ -48,6 +51,7 @@ class SettingsRepository(private val context: Context) {
             weeklyHour = p[Keys.weeklyHour] ?: d.weeklyHour,
             weeklyMinute = p[Keys.weeklyMinute] ?: d.weeklyMinute,
             fontScale = p[Keys.fontScale] ?: d.fontScale,
+            defaultYearQuota = p[Keys.defaultYearQuota] ?: d.defaultYearQuota,
         )
     }
 
@@ -62,6 +66,7 @@ class SettingsRepository(private val context: Context) {
                 weeklyHour = p[Keys.weeklyHour] ?: 18,
                 weeklyMinute = p[Keys.weeklyMinute] ?: 0,
                 fontScale = p[Keys.fontScale] ?: 1f,
+                defaultYearQuota = p[Keys.defaultYearQuota] ?: 45,
             )
             val n = transform(cur)
             p[Keys.enabled] = n.notificationsEnabled
@@ -72,6 +77,7 @@ class SettingsRepository(private val context: Context) {
             p[Keys.weeklyHour] = n.weeklyHour
             p[Keys.weeklyMinute] = n.weeklyMinute
             p[Keys.fontScale] = n.fontScale
+            p[Keys.defaultYearQuota] = n.defaultYearQuota
         }
     }
 }

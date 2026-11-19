@@ -106,9 +106,27 @@ interface RoomDao {
     suspend fun deleteAll()
 }
 
+@Dao
+interface YearQuotaDao {
+    @Query("SELECT * FROM year_quotas ORDER BY year")
+    fun observeAll(): Flow<List<YearQuotaEntity>>
+
+    @Query("SELECT * FROM year_quotas ORDER BY year")
+    suspend fun getAll(): List<YearQuotaEntity>
+
+    @Upsert
+    suspend fun upsert(quota: YearQuotaEntity)
+
+    @Upsert
+    suspend fun upsertAll(quotas: List<YearQuotaEntity>)
+
+    @Query("DELETE FROM year_quotas")
+    suspend fun deleteAll()
+}
+
 @Database(
-    entities = [TaskTypeEntity::class, RoomEntity::class, TaskEntity::class, EventEntity::class],
-    version = 1,
+    entities = [TaskTypeEntity::class, RoomEntity::class, TaskEntity::class, EventEntity::class, YearQuotaEntity::class],
+    version = 2,
     exportSchema = false,
 )
 abstract class AppDatabase : RoomDatabase() {
@@ -116,4 +134,12 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun eventDao(): EventDao
     abstract fun typeDao(): TypeDao
     abstract fun roomDao(): RoomDao
+    abstract fun yearQuotaDao(): YearQuotaDao
+}
+
+/** v1 → v2 : quotas annuels de points d'effort. */
+val MIGRATION_1_2 = object : androidx.room.migration.Migration(1, 2) {
+    override fun migrate(db: androidx.sqlite.db.SupportSQLiteDatabase) {
+        db.execSQL("CREATE TABLE IF NOT EXISTS `year_quotas` (`year` INTEGER NOT NULL, `points` INTEGER NOT NULL, PRIMARY KEY(`year`))")
+    }
 }

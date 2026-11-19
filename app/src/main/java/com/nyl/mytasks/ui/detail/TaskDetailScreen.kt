@@ -162,9 +162,12 @@ fun TaskDetailScreen(
                             task.estimatedMinutes?.let { Field(stringResource(R.string.field_duration), formatMinutes(it)) }
                         }
                         TaskKind.WORKSITE -> {
-                            task.effort?.let { Field(stringResource(R.string.field_effort), stringResource(R.string.effort_value, it)) }
+                            task.effort?.let { Field(stringResource(R.string.field_effort), stringResource(R.string.points_value, it)) }
                             task.priority?.let { Field(stringResource(R.string.field_priority), stringResource(R.string.priority_value, it)) }
-                            due?.let { Field(stringResource(R.string.field_target_year), stringResource(R.string.before_end_of, it.year)) }
+                            Field(
+                                stringResource(R.string.field_target_year),
+                                due?.let { stringResource(R.string.before_end_of, it.year) } ?: stringResource(R.string.year_not_attached),
+                            )
                             Field(stringResource(R.string.field_sessions), "${sessions.size}")
                         }
                         TaskKind.PROJECT -> task.weeklyGoalMinutes?.let {

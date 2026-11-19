@@ -39,6 +39,9 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.nyl.mytasks.R
 import com.nyl.mytasks.domain.ProjectLogic
+import com.nyl.mytasks.domain.QuotaLogic
+import com.nyl.mytasks.ui.common.SectionTitle
+import com.nyl.mytasks.ui.common.toColor
 import com.nyl.mytasks.domain.Task
 import com.nyl.mytasks.domain.TaskKind
 import com.nyl.mytasks.domain.TaskStatus
@@ -89,6 +92,7 @@ fun TypeTabScreen(
     val rooms by vm.rooms.collectAsStateWithLifecycle()
     val eventsByTask by vm.eventsByTask.collectAsStateWithLifecycle()
     val today by vm.today.collectAsStateWithLifecycle()
+    val context = androidx.compose.ui.platform.LocalContext.current
 
     val type = types.firstOrNull { it.id == typeId } ?: return
     val kind = type.kind
@@ -124,6 +128,37 @@ fun TypeTabScreen(
         StatusFilter.ALL -> (active + inactive) to emptyList()
         StatusFilter.DONE -> inactive.filter { it.status == TaskStatus.DONE } to emptyList()
         StatusFilter.ABANDONED -> inactive.filter { it.status == TaskStatus.ABANDONED } to emptyList()
+    }
+
+    // --- Travaux : vue par année avec quota de points d'effort ---
+    val quotas by vm.yearQuotas.collectAsStateWithLifecycle()
+    val settings by vm.settings.collectAsStateWithLifecycle()
+    var year by remember(typeId) { mutableStateOf(today.year) }
+    var editingQuota by remember(typeId) { mutableStateOf(false) }
+    val isWorksite = kind == TaskKind.WORKSITE
+    val worksiteAll = remember(allTasks, typeId) { allTasks.filter { it.typeId == typeId } }
+    val yearQuota = QuotaLogic.quotaFor(year, quotas, settings.defaultYearQuota)
+    val summary = remember(year, yearQuota, worksiteAll) { QuotaLogic.summary(year, yearQuota, worksiteAll) }
+    // Les points d'une tâche terminée restent consommés : elles restent donc listées avec l'année.
+    fun inStatus(t: Task) = when (status) {
+        StatusFilter.ACTIVE -> t.status != TaskStatus.ABANDONED
+        StatusFilter.ALL -> true
+        StatusFilter.DONE -> t.status == TaskStatus.DONE
+        StatusFilter.ABANDONED -> t.status == TaskStatus.ABANDONED
+    }
+    val attachedList = remember(matching, comparator, year, status) {
+        matching.filter { QuotaLogic.yearOf(it) == year && inStatus(it) }.sortedWith(comparator)
+    }
+    val pendingList = remember(matching, comparator, status) {
+        matching.filter { QuotaLogic.yearOf(it) == null && inStatus(it) && (status != StatusFilter.ACTIVE || it.status.isActive) }
+            .sortedWith(comparator)
+    }
+    val roomYears = remember(worksiteAll, quotas, settings, today) {
+        if (!isWorksite) emptyList() else (today.year..today.year + 10).mapNotNull { y ->
+            val q = QuotaLogic.quotaFor(y, quotas, settings.defaultYearQuota)
+            val free = QuotaLogic.available(y, q, worksiteAll)
+            if (free > 0) y to free else null
+        }
     }
 
     Scaffold(
@@ -206,7 +241,7 @@ fun TypeTabScreen(
                 }
             }
 
-            if (mainList.isEmpty() && historyList.isEmpty()) {
+            if (!isWorksite && mainList.isEmpty() && historyList.isEmpty()) {
                 EmptyState(stringResource(R.string.empty_list))
             }
             LazyColumn(
@@ -214,10 +249,37 @@ fun TypeTabScreen(
                 contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 8.dp, bottom = 96.dp),
                 verticalArrangement = Arrangement.spacedBy(8.dp),
             ) {
-                items(mainList, key = { it.id }) { task ->
+                if (isWorksite) {
+                    item(key = "year-card") {
+                        YearQuotaCard(
+                            summary = summary, accent = type.color.toColor(),
+                            onPrevious = { year-- }, onNext = { year++ }, onEditQuota = { editingQuota = true },
+                        )
+                    }
+                    item(key = "year-title") { SectionTitle(stringResource(R.string.year_attached, year), attachedList.size) }
+                    if (attachedList.isEmpty()) item(key = "year-empty") { EmptyState(stringResource(R.string.year_attached_empty)) }
+                    items(attachedList, key = { "y-" + it.id }) { task ->
+                        TaskRow(vm, task, kind, type, roomNames, today, eventsByTask, onOpenTask) { pending = vm.beginComplete(task) }
+                    }
+                    item(key = "pending-title") { SectionTitle(stringResource(R.string.year_pending), pendingList.size) }
+                    item(key = "pending-help") {
+                        Text(
+                            if (roomYears.isEmpty()) stringResource(R.string.year_pending_help_none)
+                            else stringResource(
+                                R.string.year_pending_help,
+                                roomYears.joinToString(" · ") { (y, free) -> context.getString(R.string.year_room_item, y, free) },
+                            ),
+                            style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                    items(pendingList, key = { "p-" + it.id }) { task ->
+                        TaskRow(vm, task, kind, type, roomNames, today, eventsByTask, onOpenTask) { pending = vm.beginComplete(task) }
+                    }
+                }
+                items(if (isWorksite) emptyList() else mainList, key = { it.id }) { task ->
                     TaskRow(vm, task, kind, type, roomNames, today, eventsByTask, onOpenTask) { pending = vm.beginComplete(task) }
                 }
-                if (historyList.isNotEmpty()) {
+                if (!isWorksite && historyList.isNotEmpty()) {
                     item(key = "history-header") {
                         Row(
                             Modifier.fillMaxWidth().clickable { showHistory = !showHistory }.padding(vertical = 12.dp),
@@ -240,6 +302,13 @@ fun TypeTabScreen(
                 }
             }
         }
+    }
+
+    if (editingQuota) {
+        YearQuotaDialog(
+            year = year, current = yearQuota, onDismiss = { editingQuota = false },
+            onSave = { points, asDefault -> vm.setYearQuota(year, points, asDefault) },
+        )
     }
 
     CompletionDialogs(

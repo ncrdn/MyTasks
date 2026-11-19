@@ -13,6 +13,7 @@ import com.nyl.mytasks.domain.Task
 import com.nyl.mytasks.domain.TaskEvent
 import com.nyl.mytasks.domain.TaskLogic
 import com.nyl.mytasks.domain.TaskType
+import com.nyl.mytasks.domain.YearQuota
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
@@ -26,11 +27,15 @@ class TaskRepository(private val db: AppDatabase, private val clock: AppClock) {
     private val events = db.eventDao()
     private val types = db.typeDao()
     private val rooms = db.roomDao()
+    private val quotas = db.yearQuotaDao()
 
     val tasksFlow: Flow<List<Task>> = tasks.observeAll().map { list -> list.map { it.toDomain() } }
     val eventsFlow: Flow<List<TaskEvent>> = events.observeAll().map { list -> list.map { it.toDomain() } }
     val typesFlow: Flow<List<TaskType>> = types.observeAll().map { list -> list.map { it.toDomain() } }
     val roomsFlow: Flow<List<HouseRoom>> = rooms.observeAll().map { list -> list.map { it.toDomain() } }
+    val quotasFlow: Flow<List<YearQuota>> = quotas.observeAll().map { list -> list.map { it.toDomain() } }
+
+    suspend fun setYearQuota(year: Int, points: Int) = quotas.upsert(YearQuota(year, points).toEntity())
 
     suspend fun seedIfEmpty(defaultTypes: List<TaskType>, defaultRooms: List<HouseRoom>) {
         db.withTransaction {
@@ -133,6 +138,7 @@ class TaskRepository(private val db: AppDatabase, private val clock: AppClock) {
         rooms = rooms.getAll().map { it.toDomain() },
         tasks = tasks.getAll().map { it.toDomain() },
         events = events.getAll().map { it.toDomain() },
+        yearQuotas = quotas.getAll().map { it.toDomain() },
     )
 
     /** Remplace toutes les données par celles de la sauvegarde. */
@@ -141,7 +147,9 @@ class TaskRepository(private val db: AppDatabase, private val clock: AppClock) {
             events.deleteAll()
             tasks.deleteAll()
             rooms.deleteAll()
+            quotas.deleteAll()
             types.deleteAll()
+            quotas.upsertAll(data.yearQuotas.map { it.toEntity() })
             types.upsertAll(data.types.map { it.toEntity() })
             rooms.upsertAll(data.rooms.map { it.toEntity() })
             tasks.upsertAll(data.tasks.map { it.toEntity() })

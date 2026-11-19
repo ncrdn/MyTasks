@@ -39,6 +39,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.nyl.mytasks.R
+import com.nyl.mytasks.domain.QuotaLogic
 import com.nyl.mytasks.domain.RecurrenceEngine
 import com.nyl.mytasks.domain.Task
 import com.nyl.mytasks.domain.TaskKind
@@ -61,6 +62,7 @@ fun TaskEditScreen(
     val types by vm.types.collectAsStateWithLifecycle()
     val rooms by vm.rooms.collectAsStateWithLifecycle()
     val today by vm.today.collectAsStateWithLifecycle()
+    val context = androidx.compose.ui.platform.LocalContext.current
     val type = types.firstOrNull { it.id == typeId } ?: return
     val kind = type.kind
     val existing = remember(taskId) { taskId?.let { id -> vm.tasks.value.firstOrNull { it.id == id } } }
@@ -76,7 +78,12 @@ fun TaskEditScreen(
     var anchorTheoretical by remember { mutableStateOf(existing?.anchorOnTheoretical ?: false) }
     var effort by remember { mutableStateOf((existing?.effort ?: 5).toFloat()) }
     var priority by remember { mutableStateOf(existing?.priority ?: 3) }
-    var targetYear by remember { mutableStateOf(existing?.dueDate?.year ?: (today.year + 1)) }
+    // Année de réalisation (null = en attente) ; une année n'est proposée que s'il y reste assez de points d'effort.
+    var targetYear by remember { mutableStateOf<Int?>(if (existing != null) existing.dueDate?.year else today.year) }
+    val allTasks by vm.tasks.collectAsStateWithLifecycle()
+    val quotas by vm.yearQuotas.collectAsStateWithLifecycle()
+    val settings by vm.settings.collectAsStateWithLifecycle()
+    val worksites = remember(allTasks, typeId) { allTasks.filter { it.typeId == typeId } }
     var goalMinutes by remember { mutableStateOf(existing?.weeklyGoalMinutes?.toString() ?: "") }
     var showErrors by remember { mutableStateOf(false) }
     val recForm = remember { RecurrenceForm(existing?.dueDate ?: today).also { f -> if (existing != null) f.load(existing.recurrence) } }
@@ -91,9 +98,27 @@ fun TaskEditScreen(
 
     val titleBlank = title.isBlank()
     val goalValue = goalMinutes.toIntOrNull() ?: 0
+
+    // Années où le poids de la tâche tient dans le quota restant (hors la tâche elle-même si on la modifie).
+    val points = effort.toInt()
+    val firstYear = minOf(today.year, existing?.dueDate?.year ?: today.year)
+    val yearsWithRoom = remember(worksites, quotas, settings, points, existing?.id, firstYear) {
+        if (kind != TaskKind.WORKSITE) emptyList() else
+            QuotaLogic.yearsWithRoom(points, firstYear, today.year + 10, quotas, settings.defaultYearQuota, worksites, existing?.id)
+    }
+    // Nouvelle tâche : si l'année proposée n'a plus assez de points, on choisit la première qui en a (ou l'attente).
+    LaunchedEffect(yearsWithRoom) {
+        if (kind == TaskKind.WORKSITE && isNew && targetYear != null && targetYear !in yearsWithRoom) {
+            targetYear = yearsWithRoom.firstOrNull()
+        }
+    }
+    fun freeIn(y: Int) = QuotaLogic.available(y, QuotaLogic.quotaFor(y, quotas, settings.defaultYearQuota), worksites, existing?.id)
+    val yearOk = kind != TaskKind.WORKSITE || targetYear == null || targetYear in yearsWithRoom
+
     val valid = !titleBlank &&
         (kind != TaskKind.PROJECT || goalValue > 0) &&
-        (kind != TaskKind.DOMESTIC || recForm.valid)
+        (kind != TaskKind.DOMESTIC || recForm.valid) &&
+        yearOk
 
     fun save() {
         if (!valid) { showErrors = true; return }
@@ -106,7 +131,7 @@ fun TaskEditScreen(
             )
             TaskKind.ONE_OFF -> base.copy(dueDate = dueDate, place = place.trim().ifBlank { null }, estimatedMinutes = est)
             TaskKind.WORKSITE -> base.copy(
-                roomId = roomId, effort = effort.toInt(), priority = priority, dueDate = LocalDate.of(targetYear, 12, 31),
+                roomId = roomId, effort = effort.toInt(), priority = priority, dueDate = targetYear?.let { LocalDate.of(it, 12, 31) },
             )
             TaskKind.PROJECT -> base.copy(weeklyGoalMinutes = goalValue)
         }.copy(title = title.trim(), notes = notes.trim())
@@ -191,13 +216,29 @@ fun TaskEditScreen(
                             }
                         }
                     }
+                    val selectedYear = targetYear
                     DropdownField(
                         label = stringResource(R.string.field_target_year),
-                        selectedText = stringResource(R.string.before_end_of, targetYear),
-                        options = (minOf(today.year, targetYear)..today.year + 15).toList(),
-                        optionText = { stringResource(R.string.before_end_of, it) },
+                        selectedText = if (selectedYear == null) stringResource(R.string.year_not_attached)
+                        else stringResource(R.string.year_option, selectedYear, (freeIn(selectedYear) - points).coerceAtLeast(0)),
+                        options = listOf<Int?>(null) + yearsWithRoom,
+                        optionText = { y -> if (y == null) stringResource(R.string.year_not_attached) else stringResource(R.string.year_option, y, freeIn(y) - points) },
                         onSelect = { targetYear = it },
                     )
+                    Text(
+                        if (yearsWithRoom.isEmpty()) stringResource(R.string.year_attach_none)
+                        else stringResource(
+                            R.string.year_room_hint,
+                            yearsWithRoom.joinToString(" · ") { y -> context.getString(R.string.year_room_item, y, freeIn(y)) },
+                        ),
+                        style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                    if (!yearOk) {
+                        Text(
+                            stringResource(R.string.year_no_room, selectedYear?.let { freeIn(it) } ?: 0),
+                            style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.error,
+                        )
+                    }
                 }
                 TaskKind.PROJECT -> {
                     NumberField(
