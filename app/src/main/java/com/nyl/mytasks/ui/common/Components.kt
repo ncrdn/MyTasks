@@ -400,77 +400,7 @@ fun DatePickerDialogFor(initial: LocalDate?, onDismiss: () -> Unit, onPick: (Loc
     ) { DatePicker(state = state) }
 }
 
-@Composable
-fun DateField(label: String, value: LocalDate?, onChange: (LocalDate) -> Unit, modifier: Modifier = Modifier) {
-    var open by remember { mutableStateOf(false) }
-    OutlinedButton(
-        onClick = { open = true },
-        modifier = modifier.fillMaxWidth().height(56.dp),
-        shape = RoundedCornerShape(4.dp),
-        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
-    ) {
-        Icon(Icons.Filled.CalendarMonth, contentDescription = null)
-        Spacer(Modifier.size(8.dp))
-        Column(Modifier.weight(1f)) {
-            Text(label, style = MaterialTheme.typography.labelSmall)
-            Text(value?.formatLong() ?: "—", style = MaterialTheme.typography.bodyLarge)
-        }
-    }
-    if (open) DatePickerDialogFor(value, { open = false }, onChange)
-}
-
-@Composable
-fun NumberField(
-    label: String,
-    value: String,
-    onChange: (String) -> Unit,
-    modifier: Modifier = Modifier,
-    suffix: String? = null,
-    isError: Boolean = false,
-) {
-    OutlinedTextField(
-        value = value,
-        onValueChange = { onChange(it.filter(Char::isDigit).take(5)) },
-        label = { Text(label) },
-        suffix = suffix?.let { { Text(it) } },
-        isError = isError,
-        singleLine = true,
-        keyboardOptions = KeyboardOptions(keyboardType = androidx.compose.ui.text.input.KeyboardType.Number),
-        modifier = modifier,
-    )
-}
-
-/** Liste déroulante générique sous forme de bouton. */
-@Composable
-fun <T> DropdownField(
-    label: String,
-    selectedText: String,
-    options: List<T>,
-    optionText: @Composable (T) -> String,
-    onSelect: (T) -> Unit,
-    modifier: Modifier = Modifier,
-) {
-    var open by remember { mutableStateOf(false) }
-    Box(modifier) {
-        OutlinedButton(
-            onClick = { open = true },
-            modifier = Modifier.fillMaxWidth().height(56.dp),
-            shape = RoundedCornerShape(4.dp),
-            border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
-        ) {
-            Column(Modifier.weight(1f)) {
-                Text(label, style = MaterialTheme.typography.labelSmall)
-                Text(selectedText, style = MaterialTheme.typography.bodyLarge, maxLines = 1, overflow = TextOverflow.Ellipsis)
-            }
-            Icon(Icons.Filled.ArrowDropDown, contentDescription = null)
-        }
-        DropdownMenu(expanded = open, onDismissRequest = { open = false }) {
-            options.forEach { opt ->
-                DropdownMenuItem(text = { Text(optionText(opt)) }, onClick = { open = false; onSelect(opt) })
-            }
-        }
-    }
-}
+// Champs de formulaire (texte, nombre, date, liste déroulante) : voir FormComponents.kt.
 
 /** Puce de filtre avec menu déroulant. */
 @Composable

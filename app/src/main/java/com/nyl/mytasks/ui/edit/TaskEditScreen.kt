@@ -44,10 +44,32 @@ import com.nyl.mytasks.domain.RecurrenceEngine
 import com.nyl.mytasks.domain.Task
 import com.nyl.mytasks.domain.TaskKind
 import com.nyl.mytasks.ui.AppViewModel
+import com.nyl.mytasks.ui.common.ChipRow
+import com.nyl.mytasks.ui.common.ChoiceChip
 import com.nyl.mytasks.ui.common.DateField
 import com.nyl.mytasks.ui.common.DropdownField
+import com.nyl.mytasks.ui.common.FormCard
+import com.nyl.mytasks.ui.common.FormTextField
 import com.nyl.mytasks.ui.common.NumberField
+import com.nyl.mytasks.ui.common.PointsBadge
+import com.nyl.mytasks.ui.common.RoundAction
+import com.nyl.mytasks.ui.common.ScreenHeader
+import com.nyl.mytasks.ui.common.SegmentedPicker
 import com.nyl.mytasks.ui.common.formatMinutes
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.navigationBarsPadding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.filled.CalendarMonth
+import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.Home
+import androidx.compose.material.icons.filled.Place
+import androidx.compose.material3.SliderDefaults
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Switch
 import java.time.LocalDate
 
 /** Création et modification d'une tâche ; les champs affichés dépendent du comportement du type. */
@@ -140,139 +162,172 @@ fun TaskEditScreen(
     }
 
     Scaffold(
+        modifier = Modifier.imePadding(),
+        contentWindowInsets = WindowInsets(0, 0, 0, 0),
         topBar = {
-            TopAppBar(
-                title = { Text(stringResource(if (isNew) R.string.new_task_title else R.string.edit_task_title, type.label)) },
-                navigationIcon = {
-                    IconButton(onClick = onClose) { Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.back)) }
-                },
+            ScreenHeader(
+                title = stringResource(if (isNew) R.string.form_new else R.string.form_edit),
+                subtitle = type.label,
+                leading = { RoundAction(Icons.AutoMirrored.Filled.ArrowBack, stringResource(R.string.back), onClose) },
             )
+        },
+        // Bouton d'enregistrement toujours visible, en bas de l'écran.
+        bottomBar = {
+            Surface(shadowElevation = 8.dp, color = MaterialTheme.colorScheme.surface) {
+                Button(
+                    onClick = ::save,
+                    modifier = Modifier.fillMaxWidth().navigationBarsPadding().padding(horizontal = 16.dp, vertical = 12.dp).heightIn(min = 56.dp),
+                    shape = RoundedCornerShape(28.dp),
+                ) {
+                    Icon(Icons.Filled.Check, contentDescription = null)
+                    Spacer(Modifier.size(8.dp))
+                    Text(stringResource(R.string.save), style = MaterialTheme.typography.titleMedium)
+                }
+            }
         },
     ) { padding ->
         Column(
-            Modifier.padding(padding).fillMaxSize().imePadding().verticalScroll(rememberScrollState()).padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp),
+            Modifier.padding(padding).fillMaxSize().verticalScroll(rememberScrollState()).padding(horizontal = 16.dp, vertical = 8.dp),
+            verticalArrangement = Arrangement.spacedBy(14.dp),
         ) {
-            OutlinedTextField(
-                value = title, onValueChange = { title = it }, singleLine = true, modifier = Modifier.fillMaxWidth(),
-                // Le clavier propose la première lettre en majuscule ; l'utilisateur peut la corriger.
-                keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Sentences),
-                label = { Text(stringResource(if (kind == TaskKind.PROJECT) R.string.field_project_name else R.string.field_object)) },
-                isError = showErrors && titleBlank,
-                supportingText = if (showErrors && titleBlank) ({ Text(stringResource(R.string.error_required)) }) else null,
-            )
-
-            if (kind == TaskKind.DOMESTIC || kind == TaskKind.WORKSITE) {
-                DropdownField(
-                    label = stringResource(R.string.field_room),
-                    selectedText = rooms.firstOrNull { it.id == roomId }?.name ?: stringResource(R.string.no_room),
-                    options = listOf<String?>(null) + rooms.map { it.id },
-                    optionText = { id -> rooms.firstOrNull { it.id == id }?.name ?: stringResource(R.string.no_room) },
-                    onSelect = { roomId = it },
+            FormCard(stringResource(R.string.form_general)) {
+                FormTextField(
+                    value = title, onValueChange = { title = it }, capitalize = true,
+                    label = stringResource(if (kind == TaskKind.PROJECT) R.string.field_project_name else R.string.field_object),
+                    leadingIcon = Icons.Filled.Edit,
+                    isError = showErrors && titleBlank, errorText = stringResource(R.string.error_required),
                 )
+                if (kind == TaskKind.DOMESTIC || kind == TaskKind.WORKSITE) {
+                    DropdownField(
+                        label = stringResource(R.string.field_room),
+                        selectedText = rooms.firstOrNull { it.id == roomId }?.name ?: stringResource(R.string.no_room),
+                        options = listOf<String?>(null) + rooms.map { it.id },
+                        optionText = { id -> rooms.firstOrNull { it.id == id }?.name ?: stringResource(R.string.no_room) },
+                        onSelect = { roomId = it },
+                        icon = Icons.Filled.Home,
+                    )
+                }
             }
 
             when (kind) {
                 TaskKind.DOMESTIC -> {
-                    DurationField(minutes) { minutes = it }
-                    RecurrenceEditor(recForm)
-                    DateField(
-                        label = stringResource(R.string.field_next_due), value = dueDate,
-                        onChange = { dueDate = it; dueTouched = true },
-                    )
-                    if (rule != null) {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Checkbox(checked = anchorTheoretical, onCheckedChange = { anchorTheoretical = it })
-                            Column(Modifier.padding(start = 4.dp)) {
-                                Text(stringResource(R.string.anchor_option))
-                                Text(
-                                    stringResource(R.string.anchor_option_help), style = MaterialTheme.typography.bodySmall,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                )
+                    FormCard(stringResource(R.string.form_planning)) {
+                        RecurrenceEditor(recForm)
+                        DateField(
+                            label = stringResource(R.string.field_next_due), value = dueDate,
+                            onChange = { dueDate = it; dueTouched = true },
+                        )
+                        if (rule != null) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Column(Modifier.weight(1f)) {
+                                    Text(stringResource(R.string.anchor_option), style = MaterialTheme.typography.bodyLarge)
+                                    Text(
+                                        stringResource(R.string.anchor_option_help), style = MaterialTheme.typography.bodySmall,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    )
+                                }
+                                Switch(checked = anchorTheoretical, onCheckedChange = { anchorTheoretical = it })
                             }
                         }
                     }
+                    FormCard(stringResource(R.string.form_duration)) { DurationField(minutes) { minutes = it } }
                 }
                 TaskKind.ONE_OFF -> {
-                    DateField(label = stringResource(R.string.field_due), value = dueDate, onChange = { dueDate = it })
-                    DurationField(minutes) { minutes = it }
-                    OutlinedTextField(
-                        value = place, onValueChange = { place = it }, singleLine = true, modifier = Modifier.fillMaxWidth(),
-                        label = { Text(stringResource(R.string.field_place)) },
-                    )
+                    FormCard(stringResource(R.string.form_due)) {
+                        DateField(label = stringResource(R.string.field_due), value = dueDate, onChange = { dueDate = it })
+                        FormTextField(
+                            value = place, onValueChange = { place = it }, capitalize = true,
+                            label = stringResource(R.string.field_place), leadingIcon = Icons.Filled.Place,
+                        )
+                    }
+                    FormCard(stringResource(R.string.form_duration)) { DurationField(minutes) { minutes = it } }
                 }
                 TaskKind.WORKSITE -> {
-                    Column {
-                        Text(stringResource(R.string.effort_label, effort.toInt()), style = MaterialTheme.typography.bodyLarge)
-                        Text(stringResource(R.string.effort_help), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                        Slider(value = effort, onValueChange = { effort = it.toInt().toFloat() }, valueRange = 1f..10f, steps = 8)
-                    }
-                    Column {
-                        Text(stringResource(R.string.priority_label, priority), style = MaterialTheme.typography.bodyLarge)
-                        Text(stringResource(R.string.priority_help), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                        FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                            (1..5).forEach { p ->
-                                FilterChip(selected = priority == p, onClick = { priority = p }, label = { Text("$p") })
+                    FormCard(stringResource(R.string.form_weight)) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Column(Modifier.weight(1f)) {
+                                Text(stringResource(R.string.effort_title), style = MaterialTheme.typography.bodyLarge)
+                                Text(stringResource(R.string.effort_help), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                             }
+                            PointsBadge(points, MaterialTheme.colorScheme.primary)
+                        }
+                        Slider(
+                            value = effort, onValueChange = { effort = it.toInt().toFloat() }, valueRange = 1f..10f, steps = 8,
+                            colors = SliderDefaults.colors(
+                                thumbColor = MaterialTheme.colorScheme.primary,
+                                activeTrackColor = MaterialTheme.colorScheme.primary,
+                                inactiveTrackColor = MaterialTheme.colorScheme.primaryContainer,
+                            ),
+                        )
+                        Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                            Text(stringResource(R.string.priority_label, priority), style = MaterialTheme.typography.bodyLarge)
+                            Text(stringResource(R.string.priority_help), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            SegmentedPicker(1..5, priority, { priority = it }, Modifier.padding(top = 4.dp))
                         }
                     }
-                    val selectedYear = targetYear
-                    DropdownField(
-                        label = stringResource(R.string.field_target_year),
-                        selectedText = if (selectedYear == null) stringResource(R.string.year_not_attached)
-                        else stringResource(R.string.year_option, selectedYear, (freeIn(selectedYear) - points).coerceAtLeast(0)),
-                        options = listOf<Int?>(null) + yearsWithRoom,
-                        optionText = { y -> if (y == null) stringResource(R.string.year_not_attached) else stringResource(R.string.year_option, y, freeIn(y) - points) },
-                        onSelect = { targetYear = it },
-                    )
-                    Text(
-                        if (yearsWithRoom.isEmpty()) stringResource(R.string.year_attach_none)
-                        else stringResource(
-                            R.string.year_room_hint,
-                            yearsWithRoom.take(4).joinToString(" · ") { y -> context.getString(R.string.year_room_item, y, freeIn(y)) } + if (yearsWithRoom.size > 4) " …" else "",
-                        ),
-                        style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                    if (!yearOk) {
-                        Text(
-                            stringResource(R.string.year_no_room, selectedYear?.let { freeIn(it) } ?: 0),
-                            style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.error,
+                    FormCard(stringResource(R.string.form_year)) {
+                        val selectedYear = targetYear
+                        DropdownField(
+                            label = stringResource(R.string.field_target_year),
+                            selectedText = if (selectedYear == null) stringResource(R.string.year_not_attached)
+                            else stringResource(R.string.year_option, selectedYear, (freeIn(selectedYear) - points).coerceAtLeast(0)),
+                            options = listOf<Int?>(null) + yearsWithRoom,
+                            optionText = { y -> if (y == null) stringResource(R.string.year_not_attached) else stringResource(R.string.year_option, y, freeIn(y) - points) },
+                            onSelect = { targetYear = it },
+                            icon = Icons.Filled.CalendarMonth,
                         )
+                        Text(
+                            if (yearsWithRoom.isEmpty()) stringResource(R.string.year_attach_none)
+                            else stringResource(
+                                R.string.year_room_hint,
+                                yearsWithRoom.take(4).joinToString(" · ") { y -> context.getString(R.string.year_room_item, y, freeIn(y)) } + if (yearsWithRoom.size > 4) " …" else "",
+                            ),
+                            style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                        if (!yearOk) {
+                            Text(
+                                stringResource(R.string.year_no_room, selectedYear?.let { freeIn(it) } ?: 0),
+                                style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.error,
+                            )
+                        }
                     }
                 }
                 TaskKind.PROJECT -> {
-                    NumberField(
-                        label = stringResource(R.string.field_monthly_goal_min), value = goalMinutes, onChange = { goalMinutes = it },
-                        suffix = "min", modifier = Modifier.fillMaxWidth(), isError = showErrors && goalValue <= 0,
-                    )
-                    FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        listOf(60, 120, 240, 360, 600).forEach { m ->
-                            FilterChip(selected = goalValue == m, onClick = { goalMinutes = m.toString() }, label = { Text(formatMinutes(m)) })
+                    FormCard(stringResource(R.string.form_goal)) {
+                        NumberField(
+                            label = stringResource(R.string.field_monthly_goal_min), value = goalMinutes, onChange = { goalMinutes = it },
+                            suffix = "min", modifier = Modifier.fillMaxWidth(), isError = showErrors && goalValue <= 0,
+                        )
+                        ChipRow {
+                            listOf(60, 120, 240, 360, 600).forEach { m ->
+                                ChoiceChip(goalValue == m, formatMinutes(m), { goalMinutes = m.toString() })
+                            }
                         }
                     }
                 }
             }
 
-            OutlinedTextField(
-                value = notes, onValueChange = { notes = it }, modifier = Modifier.fillMaxWidth(), minLines = 3,
-                label = { Text(stringResource(R.string.field_notes)) },
-            )
-            Button(onClick = ::save, modifier = Modifier.fillMaxWidth()) { Text(stringResource(R.string.save)) }
+            FormCard(stringResource(R.string.form_notes)) {
+                FormTextField(
+                    value = notes, onValueChange = { notes = it }, singleLine = false, minLines = 3, capitalize = true,
+                    label = stringResource(R.string.field_notes),
+                )
+            }
+            Spacer(Modifier.size(8.dp))
         }
     }
 }
 
-@OptIn(ExperimentalLayoutApi::class)
 @Composable
 private fun DurationField(minutes: String, onChange: (String) -> Unit) {
-    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
         NumberField(
             label = stringResource(R.string.field_duration), value = minutes, onChange = onChange,
             suffix = "min", modifier = Modifier.fillMaxWidth(),
         )
-        FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        ChipRow {
             listOf(5, 15, 30, 60, 120).forEach { m ->
-                FilterChip(selected = minutes == m.toString(), onClick = { onChange(m.toString()) }, label = { Text(formatMinutes(m)) })
+                ChoiceChip(minutes == m.toString(), formatMinutes(m), { onChange(m.toString()) })
             }
         }
     }

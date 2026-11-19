@@ -54,6 +54,17 @@
     <string name="catch_up">dont %1$s à rattraper</string>
     <string name="chart_description">Temps consacré sur les %1$d derniers mois : %2$s au total, objectif mensuel %3$s</string>
     <string name="chart_legend">%1$d derniers mois · ligne = objectif de %2$s</string>
+    <string name="form_new">Nouvelle tâche</string>
+    <string name="form_edit">Modifier la tâche</string>
+    <string name="form_general">Général</string>
+    <string name="form_planning">Planification</string>
+    <string name="form_duration">Durée estimée</string>
+    <string name="form_due">Échéance</string>
+    <string name="form_weight">Poids et priorité</string>
+    <string name="form_year">Année de réalisation</string>
+    <string name="form_goal">Objectif</string>
+    <string name="form_notes">Notes</string>
+    <string name="effort_title">Points d\'effort</string>
     <string name="year_title">Année %1$d</string>
     <string name="year_previous">Année précédente</string>
     <string name="year_next">Année suivante</string>

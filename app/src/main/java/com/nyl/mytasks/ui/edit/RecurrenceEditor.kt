@@ -17,6 +17,10 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.nyl.mytasks.R
 import com.nyl.mytasks.domain.Recurrence
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Repeat
+import com.nyl.mytasks.ui.common.ChipRow
+import com.nyl.mytasks.ui.common.ChoiceChip
 import com.nyl.mytasks.ui.common.DropdownField
 import com.nyl.mytasks.ui.common.NumberField
 import com.nyl.mytasks.ui.common.dayName
@@ -78,6 +82,7 @@ fun RecurrenceEditor(form: RecurrenceForm) {
             options = RecurrenceMode.entries,
             optionText = { stringResource(it.label) },
             onSelect = { form.mode = it },
+            icon = Icons.Filled.Repeat,
         )
         when (form.mode) {
             RecurrenceMode.NONE -> Unit
@@ -86,14 +91,10 @@ fun RecurrenceEditor(form: RecurrenceForm) {
                     label = stringResource(R.string.rec_every_n_weeks), value = form.everyWeeks,
                     onChange = { form.everyWeeks = it }, modifier = Modifier.fillMaxWidth(),
                 )
-                FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                ChipRow {
                     DayOfWeek.entries.forEach { d ->
-                        FilterChip(
-                            selected = d in form.days,
-                            // Sélection exclusive : choisir un jour désélectionne le précédent.
-                            onClick = { form.days = setOf(d) },
-                            label = { Text(dayName(d, short = true)) },
-                        )
+                        // Sélection exclusive : choisir un jour désélectionne le précédent.
+                        ChoiceChip(d in form.days, dayName(d, short = true), { form.days = setOf(d) })
                     }
                 }
             }
