@@ -42,6 +42,12 @@ interface EventDao {
     @Query("SELECT * FROM task_events")
     suspend fun getAll(): List<EventEntity>
 
+    @Query("SELECT * FROM task_events WHERE taskId = :taskId")
+    suspend fun getForTask(taskId: String): List<EventEntity>
+
+    @Query("SELECT * FROM task_events WHERE id = :id")
+    suspend fun getById(id: String): EventEntity?
+
     @Upsert
     suspend fun upsert(event: EventEntity)
 

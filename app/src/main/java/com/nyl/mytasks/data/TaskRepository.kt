@@ -82,7 +82,18 @@ class TaskRepository(private val db: AppDatabase, private val clock: AppClock) {
     suspend fun addSession(id: String, date: LocalDate, minutes: Int?, note: String) =
         act(id) { t, _ -> TaskLogic.session(t, date, minutes, note) }
 
-    suspend fun deleteEvent(eventId: String) = events.delete(eventId)
+    /** Supprime une entrée d'historique et remet la tâche dans son état précédent (voir [TaskLogic.undo]). */
+    suspend fun deleteEvent(eventId: String) {
+        db.withTransaction {
+            val event = events.getById(eventId)?.toDomain() ?: return@withTransaction
+            val task = getTask(event.taskId)
+            if (task != null) {
+                val restored = TaskLogic.undo(task, event, events.getForTask(task.id).map { it.toDomain() })
+                if (restored != task) tasks.upsert(restored.toEntity())
+            }
+            events.delete(eventId)
+        }
+    }
 
     suspend fun saveType(type: TaskType) = types.upsert(type.toEntity())
 

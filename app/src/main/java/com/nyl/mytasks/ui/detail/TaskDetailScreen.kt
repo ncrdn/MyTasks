@@ -44,6 +44,7 @@ import com.nyl.mytasks.R
 import com.nyl.mytasks.domain.EventKind
 import com.nyl.mytasks.domain.ProjectLogic
 import com.nyl.mytasks.domain.TaskEvent
+import com.nyl.mytasks.domain.TaskLogic
 import com.nyl.mytasks.domain.TaskKind
 import com.nyl.mytasks.domain.TaskStatus
 import com.nyl.mytasks.ui.AppViewModel
@@ -82,6 +83,7 @@ fun TaskDetailScreen(
     val type = types.firstOrNull { it.id == task?.typeId }
     var confirmDelete by remember { mutableStateOf(false) }
     var confirmAbandon by remember { mutableStateOf(false) }
+    var eventToDelete by remember { mutableStateOf<TaskEvent?>(null) }
     var postponing by remember { mutableStateOf(false) }
     var sessionDialog by remember { mutableStateOf(false) }
     var pending by remember { mutableStateOf<PendingCompletion?>(null) }
@@ -228,7 +230,7 @@ fun TaskDetailScreen(
             if (events.isEmpty()) Text(stringResource(R.string.history_empty), color = MaterialTheme.colorScheme.onSurfaceVariant)
             events.forEachIndexed { i, e ->
                 if (i > 0) HorizontalDivider()
-                EventRow(e, onDelete = if (e.kind == EventKind.SESSION) ({ vm.deleteEvent(e.id) }) else null)
+                EventRow(e, onDelete = if (TaskLogic.isUndoable(e.kind)) ({ eventToDelete = e }) else null)
             }
         }
     }
@@ -238,6 +240,14 @@ fun TaskDetailScreen(
             title = stringResource(R.string.delete_title), message = stringResource(R.string.delete_message),
             confirmText = stringResource(R.string.action_delete),
             onConfirm = { vm.delete(taskId); onBack() }, onDismiss = { confirmDelete = false },
+        )
+    }
+    eventToDelete?.let { e ->
+        ConfirmDialog(
+            title = stringResource(R.string.delete_event_title),
+            message = stringResource(if (e.kind == EventKind.SESSION) R.string.delete_event_message_session else R.string.delete_event_message),
+            confirmText = stringResource(R.string.action_delete),
+            onConfirm = { vm.deleteEvent(e.id) }, onDismiss = { eventToDelete = null },
         )
     }
     if (confirmAbandon) {
@@ -299,8 +309,8 @@ private fun EventRow(e: TaskEvent, onDelete: (() -> Unit)?) {
                 style = MaterialTheme.typography.bodyLarge,
             )
             val extra = when (e.kind) {
-                EventKind.POSTPONED -> runCatching { java.time.LocalDate.parse(e.note).formatLong() }.getOrNull()
-                EventKind.SKIPPED -> runCatching { java.time.LocalDate.parse(e.note).formatLong() }.getOrNull()
+                EventKind.POSTPONED, EventKind.SKIPPED -> TaskLogic.noteDate(e.note)?.formatLong()
+                EventKind.DONE -> null // la note garde l'échéance traitée (technique)
                 else -> e.note.takeIf { it.isNotBlank() }
             }
             if (extra != null) Text(extra, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)

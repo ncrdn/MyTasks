@@ -44,9 +44,10 @@ object TaskLogic {
         if (rule != null && due != null) {
             val base = if (task.anchorOnTheoretical) due else maxOf(today, due)
             val next = RecurrenceEngine.next(rule, base)
+            // La note garde l'échéance traitée : elle permet de restaurer l'occurrence si l'entrée est supprimée.
             return Outcome(
                 task.copy(dueDate = next, status = TaskStatus.TODO),
-                listOf(NewEvent(EventKind.DONE, today)),
+                listOf(NewEvent(EventKind.DONE, today, note = due.toString())),
             )
         }
         return Outcome(
@@ -69,10 +70,63 @@ object TaskLogic {
     /** Déplace l'échéance ; le retard est recalculé à partir de la nouvelle date. */
     fun postpone(task: Task, newDue: LocalDate, today: LocalDate): Outcome {
         val status = if (task.recurrence != null) task.status else TaskStatus.POSTPONED
+        // Note « nouvelle échéance|ancienne échéance » : l'ancienne sert à annuler le report.
+        val note = listOfNotNull(newDue, task.dueDate).joinToString("|")
         return Outcome(
             task.copy(dueDate = newDue, status = status),
-            listOf(NewEvent(EventKind.POSTPONED, today, note = newDue.toString())),
+            listOf(NewEvent(EventKind.POSTPONED, today, note = note)),
         )
+    }
+
+    /** Date portée par la note d'un événement (échéance visée), sans l'éventuelle échéance précédente. */
+    fun noteDate(note: String): LocalDate? = runCatching { LocalDate.parse(note.substringBefore('|')) }.getOrNull()
+
+    private fun previousDate(note: String): LocalDate? =
+        note.substringAfter('|', "").takeIf { it.isNotEmpty() }?.let { runCatching { LocalDate.parse(it) }.getOrNull() }
+
+    private val stateKinds = setOf(EventKind.DONE, EventKind.SKIPPED, EventKind.POSTPONED, EventKind.ABANDONED, EventKind.REOPENED)
+
+    /** Entrées d'historique dont la suppression doit remettre la tâche dans son état précédent. */
+    fun isUndoable(kind: EventKind): Boolean = kind in stateKinds || kind == EventKind.SESSION
+
+    /**
+     * Supprimer une entrée d'historique : si c'est la dernière à avoir changé l'état de la tâche
+     * (fait, ignoré, reporté, abandonné…), la tâche (ou l'occurrence récurrente) revient à son état
+     * précédent, y compris la date de la prochaine occurrence. Une entrée plus ancienne ou une session
+     * n'est que retirée de l'historique : les compteurs, jauges et retards sont recalculés à partir des événements.
+     */
+    fun undo(task: Task, event: TaskEvent, events: List<TaskEvent>): Task {
+        if (event.kind !in stateKinds) return task
+        val states = events.filter { it.kind in stateKinds }.sortedWith(compareBy({ it.date }, { it.timestamp }))
+        if (states.lastOrNull()?.id != event.id) return task
+        val before = states.dropLast(1)
+        val rule = task.recurrence
+        return when (event.kind) {
+            EventKind.DONE -> if (rule != null) {
+                task.copy(status = TaskStatus.TODO, dueDate = noteDate(event.note) ?: task.dueDate?.let { RecurrenceEngine.previous(rule, it) })
+            } else {
+                task.copy(status = TaskStatus.TODO, closedAt = null)
+            }
+            EventKind.SKIPPED ->
+                task.copy(status = TaskStatus.TODO, dueDate = noteDate(event.note) ?: task.dueDate?.let { d -> rule?.let { RecurrenceEngine.previous(it, d) } })
+            EventKind.POSTPONED -> {
+                val stillPostponed = rule == null && before.lastOrNull()?.kind == EventKind.POSTPONED
+                task.copy(
+                    dueDate = previousDate(event.note) ?: task.dueDate,
+                    status = if (stillPostponed) TaskStatus.POSTPONED else TaskStatus.TODO,
+                )
+            }
+            EventKind.ABANDONED -> task.copy(status = TaskStatus.TODO, closedAt = null)
+            EventKind.REOPENED -> when (val prev = before.lastOrNull()) {
+                null -> task
+                else -> when (prev.kind) {
+                    EventKind.ABANDONED -> task.copy(status = TaskStatus.ABANDONED, closedAt = prev.date)
+                    EventKind.DONE -> if (rule == null) task.copy(status = TaskStatus.DONE, closedAt = prev.date) else task
+                    else -> task
+                }
+            }
+            else -> task
+        }
     }
 
     fun abandon(task: Task, today: LocalDate): Outcome = Outcome(

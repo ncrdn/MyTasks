@@ -131,6 +131,9 @@
     <string name="event_created">Créée</string>
     <string name="event_done">Faite</string>
     <string name="event_skipped">Occurrence ignorée</string>
+    <string name="delete_event_title">Supprimer cette entrée ?</string>
+    <string name="delete_event_message">Si c\'est la dernière action, la tâche reviendra à son état précédent (« à faire », prochaine échéance recalculée). Les compteurs et retards sont mis à jour.</string>
+    <string name="delete_event_message_session">La session sera retirée de l\'historique et les totaux de temps seront recalculés.</string>
     <string name="event_postponed">Reportée</string>
     <string name="event_abandoned">Abandonnée</string>
     <string name="event_reopened">Rouverte</string>

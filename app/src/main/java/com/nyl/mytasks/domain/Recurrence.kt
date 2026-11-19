@@ -88,6 +88,13 @@ object RecurrenceEngine {
         is Recurrence.EveryDays -> after.plusDays(rule.days.coerceAtLeast(1).toLong())
     }
 
+    /** Dernière occurrence strictement antérieure à [before]. */
+    fun previous(rule: Recurrence, before: LocalDate): LocalDate = when (rule) {
+        is Recurrence.EveryDays -> before.minusDays(rule.days.coerceAtLeast(1).toLong())
+        else -> occurrencesBetween(rule, before.minusYears(2), before.minusDays(1), limit = 2000).lastOrNull()
+            ?: before.minusDays(7)
+    }
+
     /** Occurrences comprises entre [from] et [to] (bornes incluses). */
     fun occurrencesBetween(rule: Recurrence, from: LocalDate, to: LocalDate, limit: Int = 400): List<LocalDate> {
         val out = ArrayList<LocalDate>()

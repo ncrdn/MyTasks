@@ -79,4 +79,76 @@ class TaskLogicTest {
         assertEquals(d("2026-11-24"), resumed.dueDate)
         assertFalse(resumed.paused)
     }
+
+    // --- Suppression d'une entrée d'historique ---
+
+    private var clock = 0L
+    private fun ev(task: Task, n: NewEvent) = TaskEvent("e${clock}", task.id, n.kind, n.date, n.minutes, n.note, clock++)
+
+    @Test fun undo_done_oneOff_restoresTodo() {
+        val t = parcel("2026-11-20")
+        val out = TaskLogic.complete(t, d("2026-11-18"))
+        val e = ev(t, out.events.single())
+        val back = TaskLogic.undo(out.task, e, listOf(e))
+        assertEquals(TaskStatus.TODO, back.status)
+        assertEquals(null, back.closedAt)
+    }
+
+    @Test fun undo_done_recurring_restoresPreviousOccurrence() {
+        val t = trash("2026-11-03") // en retard, fait le 18 → prochaine au 24
+        val out = TaskLogic.complete(t, d("2026-11-18"))
+        assertEquals(d("2026-11-24"), out.task.dueDate)
+        val e = ev(t, out.events.single())
+        val back = TaskLogic.undo(out.task, e, listOf(e))
+        assertEquals(d("2026-11-03"), back.dueDate) // l'échéance en retard revient
+        assertEquals(TaskStatus.TODO, back.status)
+    }
+
+    @Test fun undo_done_recurring_withoutNote_fallsBackOnPreviousOccurrence() {
+        val t = trash("2026-11-24")
+        val old = TaskEvent("x", t.id, EventKind.DONE, d("2026-11-17"), null, "", 1L)
+        assertEquals(d("2026-11-17"), TaskLogic.undo(t, old, listOf(old)).dueDate)
+    }
+
+    @Test fun undo_skip_restoresTheSkippedOccurrence() {
+        val t = trash("2026-11-17")
+        val out = TaskLogic.skip(t, d("2026-11-17"))
+        val e = ev(t, out.events.single())
+        assertEquals(d("2026-11-17"), TaskLogic.undo(out.task, e, listOf(e)).dueDate)
+    }
+
+    @Test fun undo_postpone_restoresPreviousDueDate() {
+        val t = parcel("2026-11-20")
+        val out = TaskLogic.postpone(t, d("2026-11-30"), d("2026-11-18"))
+        assertEquals(TaskStatus.POSTPONED, out.task.status)
+        val e = ev(t, out.events.single())
+        val back = TaskLogic.undo(out.task, e, listOf(e))
+        assertEquals(d("2026-11-20"), back.dueDate)
+        assertEquals(TaskStatus.TODO, back.status)
+    }
+
+    @Test fun undo_olderEntry_onlyRemovesHistory() {
+        val t = trash("2026-11-10")
+        val first = TaskLogic.complete(t, d("2026-11-10"))
+        val e1 = ev(t, first.events.single())
+        val second = TaskLogic.complete(first.task, d("2026-11-17"))
+        val e2 = ev(first.task, second.events.single())
+        // Supprimer la plus ancienne ne doit pas toucher à la prochaine échéance courante.
+        assertEquals(second.task, TaskLogic.undo(second.task, e1, listOf(e1, e2)))
+        // Supprimer la dernière restaure l'occurrence du 17.
+        assertEquals(d("2026-11-17"), TaskLogic.undo(second.task, e2, listOf(e1, e2)).dueDate)
+    }
+
+    @Test fun undo_abandon_reopensTask() {
+        val t = parcel("2026-11-20")
+        val out = TaskLogic.abandon(t, d("2026-11-18"))
+        val e = ev(t, out.events.single())
+        assertEquals(TaskStatus.TODO, TaskLogic.undo(out.task, e, listOf(e)).status)
+    }
+
+    @Test fun undo_session_leavesTaskUntouched() {
+        val t = parcel("2026-11-20")
+        val e = ev(t, NewEvent(EventKind.SESSION, d("2026-11-18"), 30))
+        assertEquals(t, TaskLogic.undo(t, e, listOf(e)))
+    }
 }
