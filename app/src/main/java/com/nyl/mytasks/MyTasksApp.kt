@@ -18,11 +18,16 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 
 /** Conteneur de dépendances (injection manuelle). */
-class AppContainer(app: Application) {
+class AppContainer(private val app: Application) {
     val clock = AppClock()
     private val db: AppDatabase = Room.databaseBuilder(app, AppDatabase::class.java, "mytasks.db").build()
     val repository = TaskRepository(db, clock)
     val settings = SettingsRepository(app)
+
+    /** Intitulés par défaut renommés dans une version ultérieure (données déjà enregistrées ou importées). */
+    suspend fun upgradeLegacyLabels() {
+        repository.renameTypeIfUnchanged("domestic", "Tâches domestiques", app.getString(R.string.type_domestic))
+    }
 }
 
 class MyTasksApp : Application() {
@@ -37,6 +42,7 @@ class MyTasksApp : Application() {
         Notifier.createChannel(this)
         appScope.launch {
             container.repository.seedIfEmpty(defaultTypes(), defaultRooms())
+            container.upgradeLegacyLabels()
             ReminderScheduler.schedule(this@MyTasksApp, container.settings.flow.first(), replace = false)
         }
     }

@@ -97,6 +97,12 @@ class TaskRepository(private val db: AppDatabase, private val clock: AppClock) {
 
     suspend fun saveType(type: TaskType) = types.upsert(type.toEntity())
 
+    /** Applique un nouvel intitulé par défaut aux données créées avant le renommage (si l'utilisateur ne l'a pas personnalisé). */
+    suspend fun renameTypeIfUnchanged(id: String, oldLabel: String, newLabel: String) {
+        val type = types.getAll().firstOrNull { it.id == id } ?: return
+        if (type.label == oldLabel) types.upsert(type.copy(label = newLabel))
+    }
+
     suspend fun saveRoom(room: HouseRoom) = rooms.upsert(room.toEntity())
 
     suspend fun deleteRoom(id: String) {

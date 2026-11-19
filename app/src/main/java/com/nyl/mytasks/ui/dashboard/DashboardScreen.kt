@@ -151,7 +151,7 @@ private fun WeekProgress(s: DashboardState, types: List<TaskType>, onOpenTask: (
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow),
     ) {
         Column(Modifier.padding(18.dp), verticalArrangement = Arrangement.spacedBy(18.dp)) {
-            // Domestiques : X occurrences faites / Y prévues
+            // Récurrentes : X occurrences faites / Y prévues
             Column {
                 Text(label(TaskKind.DOMESTIC), style = MaterialTheme.typography.titleSmall, color = color(TaskKind.DOMESTIC))
                 Text(stringResource(R.string.dash_domestic_progress, s.domesticDone, s.domesticPlanned))

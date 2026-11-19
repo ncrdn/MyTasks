@@ -115,5 +115,6 @@ class AppViewModel(private val container: AppContainer) : ViewModel() {
             context.contentResolver.openInputStream(uri)!!.use { it.readBytes().decodeToString() }
         }
         repo.restore(BackupCodec.decode(text))
+        container.upgradeLegacyLabels()
     }
 }

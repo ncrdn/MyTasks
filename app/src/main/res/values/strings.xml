@@ -3,7 +3,7 @@
     <string name="app_name">MyTasks</string>
 
     <!-- Types de tâches par défaut (modifiables par l'utilisateur) -->
-    <string name="type_domestic">Tâches domestiques</string>
+    <string name="type_domestic">Tâches récurrentes</string>
     <string name="type_oneoff">Tâches ponctuelles</string>
     <string name="type_worksite">Chantiers</string>
     <string name="type_project">Projets</string>
