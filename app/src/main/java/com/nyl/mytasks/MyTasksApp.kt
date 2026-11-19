@@ -16,6 +16,11 @@ import com.nyl.mytasks.notif.Notifier
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
+import androidx.glance.appwidget.updateAll
+import com.nyl.mytasks.widget.ProgressWidget
+import kotlinx.coroutines.FlowPreview
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 
@@ -41,10 +46,18 @@ class MyTasksApp : Application() {
 
     private val appScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
 
+    @OptIn(FlowPreview::class)
     override fun onCreate() {
         super.onCreate()
         container = AppContainer(this)
         Notifier.createChannel(this)
+        // Le widget d'avancement suit les données : on le rafraîchit après chaque modification.
+        appScope.launch {
+            val repo = container.repository
+            combine(repo.tasksFlow, repo.eventsFlow, repo.typesFlow, repo.quotasFlow, container.settings.flow) { _, _, _, _, _ -> }
+                .debounce(500)
+                .collect { runCatching { ProgressWidget().updateAll(this@MyTasksApp) } }
+        }
         appScope.launch {
             container.repository.seedIfEmpty(defaultTypes(), defaultRooms())
             container.upgradeLegacyLabels()

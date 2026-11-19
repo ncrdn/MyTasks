@@ -221,6 +221,11 @@
     <string name="dash_overdue">Retards</string>
     <string name="dash_overdue_empty">Aucun retard, bravo !</string>
     <string name="dash_progress">Avancement</string>
+    <string name="settings_widget">Widget d\'avancement</string>
+    <string name="settings_widget_help">Ajouter les jauges à l\'écran d\'accueil</string>
+    <string name="msg_widget_unsupported">Votre écran d\'accueil ne permet pas cet ajout : choisissez le widget « Avancement » dans la liste des widgets.</string>
+    <string name="widget_name">Avancement</string>
+    <string name="widget_description">Jauges d\'avancement : semaine, mois et année.</string>
     <string name="this_week">Cette semaine</string>
     <string name="dash_later_this_week">À faire cette semaine</string>
     <string name="dash_week_empty">Rien d\'autre de prévu cette semaine.</string>

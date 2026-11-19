@@ -119,6 +119,7 @@ fun SettingsScreen(
     val msgExported = stringResource(R.string.msg_exported)
     val msgImported = stringResource(R.string.msg_imported)
     val msgError = stringResource(R.string.msg_error)
+    val msgWidgetUnsupported = stringResource(R.string.msg_widget_unsupported)
 
     val permission = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { }
     fun ensureNotificationPermission() {
@@ -137,6 +138,11 @@ fun SettingsScreen(
             SectionTitle(stringResource(R.string.settings_customize), modifier = Modifier.padding(horizontal = 16.dp))
             NavRow(stringResource(R.string.settings_types), stringResource(R.string.settings_types_help), onOpenTypes)
             NavRow(stringResource(R.string.settings_rooms), stringResource(R.string.settings_rooms_help), onOpenRooms)
+            NavRow(stringResource(R.string.settings_widget), stringResource(R.string.settings_widget_help)) {
+                if (!com.nyl.mytasks.widget.requestPinProgressWidget(context)) {
+                    scope.launch { snackbar.showSnackbar(msgWidgetUnsupported) }
+                }
+            }
 
             SectionTitle(stringResource(R.string.settings_display), modifier = Modifier.padding(horizontal = 16.dp))
             Column(Modifier.padding(horizontal = 16.dp)) {

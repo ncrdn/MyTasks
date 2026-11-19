@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Aperçu du widget dans la liste des widgets : fond graphite et quatre anneaux de progression. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="320dp"
+    android:height="120dp"
+    android:viewportWidth="320"
+    android:viewportHeight="120">
+    <path
+        android:fillColor="#1F1F24"
+        android:pathData="M28,0 H292 A28,28 0 0 1 320,28 V92 A28,28 0 0 1 292,120 H28 A28,28 0 0 1 0,92 V28 A28,28 0 0 1 28,0 Z" />
+
+    <!-- Tâches récurrentes -->
+    <path android:pathData="M14,60 a26,26 0 1,1 52,0 a26,26 0 1,1 -52,0" android:strokeColor="#380F9D8A" android:strokeWidth="8" />
+    <group android:pivotX="40" android:pivotY="60" android:rotation="90">
+        <path android:pathData="M14,60 a26,26 0 1,1 52,0 a26,26 0 1,1 -52,0" android:strokeColor="#0F9D8A" android:strokeWidth="8" android:strokeLineCap="round" android:trimPathEnd="0.33" />
+    </group>
+
+    <!-- Tâches ponctuelles -->
+    <path android:pathData="M94,60 a26,26 0 1,1 52,0 a26,26 0 1,1 -52,0" android:strokeColor="#38E08A00" android:strokeWidth="8" />
+
+    <!-- Projets -->
+    <path android:pathData="M174,60 a26,26 0 1,1 52,0 a26,26 0 1,1 -52,0" android:strokeColor="#381D8FE1" android:strokeWidth="8" />
+    <group android:pivotX="200" android:pivotY="60" android:rotation="90">
+        <path android:pathData="M174,60 a26,26 0 1,1 52,0 a26,26 0 1,1 -52,0" android:strokeColor="#1D8FE1" android:strokeWidth="8" android:strokeLineCap="round" android:trimPathEnd="0.41" />
+    </group>
+
+    <!-- Travaux -->
+    <path android:pathData="M254,60 a26,26 0 1,1 52,0 a26,26 0 1,1 -52,0" android:strokeColor="#38D6409F" android:strokeWidth="8" />
+    <group android:pivotX="280" android:pivotY="60" android:rotation="90">
+        <path android:pathData="M254,60 a26,26 0 1,1 52,0 a26,26 0 1,1 -52,0" android:strokeColor="#D6409F" android:strokeWidth="8" android:strokeLineCap="round" android:trimPathEnd="0.2" />
+    </group>
+</vector>
