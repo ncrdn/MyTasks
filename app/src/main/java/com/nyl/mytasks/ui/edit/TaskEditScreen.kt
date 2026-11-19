@@ -10,6 +10,8 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -128,6 +130,8 @@ fun TaskEditScreen(
         ) {
             OutlinedTextField(
                 value = title, onValueChange = { title = it }, singleLine = true, modifier = Modifier.fillMaxWidth(),
+                // Le clavier propose la première lettre en majuscule ; l'utilisateur peut la corriger.
+                keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Sentences),
                 label = { Text(stringResource(if (kind == TaskKind.PROJECT) R.string.field_project_name else R.string.field_object)) },
                 isError = showErrors && titleBlank,
                 supportingText = if (showErrors && titleBlank) ({ Text(stringResource(R.string.error_required)) }) else null,
