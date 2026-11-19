@@ -51,6 +51,7 @@ import com.nyl.mytasks.ui.AppViewModel
 import com.nyl.mytasks.ui.common.CompletionDialogs
 import com.nyl.mytasks.ui.common.ConfirmDialog
 import com.nyl.mytasks.ui.common.DatePickerDialogFor
+import com.nyl.mytasks.ui.common.MonthlyBars
 import com.nyl.mytasks.ui.common.OverduePill
 import com.nyl.mytasks.ui.common.PendingCompletion
 import com.nyl.mytasks.ui.common.Pill
@@ -117,7 +118,7 @@ fun TaskDetailScreen(
         val kind = type.kind
         val events = eventsByTask[task.id].orEmpty()
         val sessions = events.filter { it.kind == EventKind.SESSION }
-        val project = if (kind == TaskKind.PROJECT) ProjectLogic.week(task, events, today) else null
+        val project = if (kind == TaskKind.PROJECT) ProjectLogic.month(task, events, today) else null
         val active = task.status.isActive
         val due = task.dueDate
         val overdue = active && !task.paused && (
@@ -175,8 +176,8 @@ fun TaskDetailScreen(
                                 if (spent > 0) "${sessions.size} · ${formatMinutes(spent)}" else "${sessions.size}",
                             )
                         }
-                        TaskKind.PROJECT -> task.weeklyGoalMinutes?.let {
-                            Field(stringResource(R.string.field_weekly_goal), stringResource(R.string.per_week, formatMinutes(it)))
+                        TaskKind.PROJECT -> task.monthlyGoalMinutes?.let {
+                            Field(stringResource(R.string.field_monthly_goal), stringResource(R.string.per_month, formatMinutes(it)))
                         }
                     }
                     Field(stringResource(R.string.field_created), task.createdAt.formatLong())
@@ -188,18 +189,26 @@ fun TaskDetailScreen(
             if (project != null && active) {
                 Card(Modifier.fillMaxWidth(), colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow)) {
                     Column(Modifier.padding(16.dp)) {
-                        Text(stringResource(R.string.this_week), style = MaterialTheme.typography.titleSmall)
+                        Text(stringResource(R.string.this_month), style = MaterialTheme.typography.titleSmall)
                         LinearProgressIndicator(
                             progress = { project.progress }, modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
                             color = type.color.toColor(),
                         )
-                        Text(stringResource(R.string.progress_minutes, formatMinutes(project.doneThisWeek), formatMinutes(project.target)))
+                        Text(stringResource(R.string.progress_minutes, formatMinutes(project.doneThisMonth), formatMinutes(project.target)))
                         if (project.carryOver > 0) {
                             Text(
                                 stringResource(R.string.catch_up, formatMinutes(project.carryOver)),
                                 color = MaterialTheme.colorScheme.error,
                             )
                         }
+                        MonthlyBars(
+                            ProjectLogic.history(events, today), project.goal, type.color.toColor(),
+                            modifier = Modifier.padding(top = 14.dp), chartHeight = 96.dp,
+                        )
+                        Text(
+                            stringResource(R.string.chart_legend, 12, formatMinutes(project.goal)),
+                            style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
                     }
                 }
             }
@@ -273,7 +282,7 @@ fun TaskDetailScreen(
         SessionDialog(
             title = stringResource(if (isProject) R.string.log_time else R.string.log_session),
             minutesRequired = isProject,
-            initialMinutes = if (isProject) (task.weeklyGoalMinutes ?: 30) else 0,
+            initialMinutes = if (isProject) minOf(task.monthlyGoalMinutes ?: 60, 60) else 0,
             today = today,
             onDismiss = { sessionDialog = false },
             onConfirm = { d, m, n -> vm.addSession(taskId, d, m, n); sessionDialog = false },

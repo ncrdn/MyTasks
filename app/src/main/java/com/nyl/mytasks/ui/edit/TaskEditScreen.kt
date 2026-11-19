@@ -84,7 +84,7 @@ fun TaskEditScreen(
     val quotas by vm.yearQuotas.collectAsStateWithLifecycle()
     val settings by vm.settings.collectAsStateWithLifecycle()
     val worksites = remember(allTasks, typeId) { allTasks.filter { it.typeId == typeId } }
-    var goalMinutes by remember { mutableStateOf(existing?.weeklyGoalMinutes?.toString() ?: "") }
+    var goalMinutes by remember { mutableStateOf(existing?.monthlyGoalMinutes?.toString() ?: "") }
     var showErrors by remember { mutableStateOf(false) }
     val recForm = remember { RecurrenceForm(existing?.dueDate ?: today).also { f -> if (existing != null) f.load(existing.recurrence) } }
 
@@ -133,7 +133,7 @@ fun TaskEditScreen(
             TaskKind.WORKSITE -> base.copy(
                 roomId = roomId, effort = effort.toInt(), priority = priority, dueDate = targetYear?.let { LocalDate.of(it, 12, 31) },
             )
-            TaskKind.PROJECT -> base.copy(weeklyGoalMinutes = goalValue)
+            TaskKind.PROJECT -> base.copy(monthlyGoalMinutes = goalValue)
         }.copy(title = title.trim(), notes = notes.trim())
         if (isNew) vm.saveNew(task) else vm.saveEdited(task)
         onClose()
@@ -242,11 +242,11 @@ fun TaskEditScreen(
                 }
                 TaskKind.PROJECT -> {
                     NumberField(
-                        label = stringResource(R.string.field_weekly_goal_min), value = goalMinutes, onChange = { goalMinutes = it },
+                        label = stringResource(R.string.field_monthly_goal_min), value = goalMinutes, onChange = { goalMinutes = it },
                         suffix = "min", modifier = Modifier.fillMaxWidth(), isError = showErrors && goalValue <= 0,
                     )
                     FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        listOf(30, 60, 90, 120, 180).forEach { m ->
+                        listOf(60, 120, 240, 360, 600).forEach { m ->
                             FilterChip(selected = goalValue == m, onClick = { goalMinutes = m.toString() }, label = { Text(formatMinutes(m)) })
                         }
                     }

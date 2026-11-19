@@ -74,7 +74,7 @@ data class Task(
     val recurrence: Recurrence? = null,
     val anchorOnTheoretical: Boolean = false,
     val paused: Boolean = false,
-    val weeklyGoalMinutes: Int? = null,
+    val monthlyGoalMinutes: Int? = null,
 )
 
 /** Événement d'historique : complétion, report, session de travail (avec durée), etc. */

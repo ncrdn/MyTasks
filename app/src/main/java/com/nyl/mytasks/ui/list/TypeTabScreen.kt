@@ -125,7 +125,7 @@ fun TypeTabScreen(
         }
     }
     val comparator = remember(sort, eventsByTask, today, roomNames) {
-        comparatorFor(sort, roomNames) { t -> ProjectLogic.week(t, eventsByTask[t.id].orEmpty(), today).remaining }
+        comparatorFor(sort, roomNames) { t -> ProjectLogic.month(t, eventsByTask[t.id].orEmpty(), today).remaining }
     }
     val active = remember(matching, comparator) { matching.filter { it.status.isActive }.sortedWith(comparator) }
     val inactive = remember(matching) { matching.filter { !it.status.isActive }.sortedByDescending { it.closedAt } }
@@ -360,12 +360,13 @@ private fun TaskRow(
     onComplete: (() -> Unit)?,
 ) {
     val taskEvents = eventsByTask[task.id].orEmpty()
-    val project = if (kind == TaskKind.PROJECT) ProjectLogic.week(task, taskEvents, today) else null
+    val project = if (kind == TaskKind.PROJECT) ProjectLogic.month(task, taskEvents, today) else null
     val sessions = taskEvents.filter { it.kind == com.nyl.mytasks.domain.EventKind.SESSION }
     TaskCard(
         task = task, kind = kind, type = type, roomName = task.roomId?.let(roomNames::get), today = today,
         project = project, onClick = { onOpenTask(task.id) }, onComplete = onComplete,
         sessions = sessions.size, sessionMinutes = sessions.sumOf { it.minutes ?: 0 },
+        history = if (kind == TaskKind.PROJECT) ProjectLogic.history(taskEvents, today) else emptyList(),
     )
 }
 

@@ -49,9 +49,11 @@
     <string name="due_in_days">Dans %1$d j · %2$s</string>
     <string name="due_late_days">En retard de %1$d j</string>
     <string name="before_end_of">avant fin %1$d</string>
-    <string name="per_week">%1$s / semaine</string>
+    <string name="per_month">%1$s / mois</string>
     <string name="progress_minutes">%1$s / %2$s</string>
     <string name="catch_up">dont %1$s à rattraper</string>
+    <string name="chart_description">Temps consacré sur les %1$d derniers mois : %2$s au total, objectif mensuel %3$s</string>
+    <string name="chart_legend">%1$d derniers mois · ligne = objectif de %2$s</string>
     <string name="year_title">Année %1$d</string>
     <string name="year_previous">Année précédente</string>
     <string name="year_next">Année suivante</string>
@@ -138,8 +140,8 @@
     <string name="field_priority">Priorité</string>
     <string name="field_target_year">Année visée</string>
     <string name="field_sessions">Sessions de travail</string>
-    <string name="field_weekly_goal">Objectif hebdomadaire</string>
-    <string name="field_weekly_goal_min">Objectif hebdomadaire</string>
+    <string name="field_monthly_goal">Objectif mensuel</string>
+    <string name="field_monthly_goal_min">Objectif mensuel</string>
     <string name="field_created">Créée le</string>
     <string name="field_closed">Clôturée le</string>
     <string name="field_notes">Notes</string>
@@ -151,7 +153,7 @@
     <string name="field_comment">Commentaire (facultatif)</string>
     <string name="anchor_completion">À partir de la date de complétion</string>
     <string name="anchor_theoretical">À partir de la date théorique</string>
-    <string name="this_week">Cette semaine</string>
+    <string name="this_month">Ce mois-ci</string>
     <string name="history">Historique</string>
     <string name="history_empty">Aucun événement pour le moment.</string>
     <string name="event_created">Créée</string>
@@ -243,8 +245,8 @@
     <string name="notif_enable">Activer les rappels</string>
     <string name="notif_daily_time">Rappel quotidien</string>
     <string name="notif_due_eve">Prévenir la veille d\'une échéance</string>
-    <string name="notif_weekly">Alerte hebdomadaire des projets</string>
-    <string name="notif_weekly_time">Heure de l\'alerte (dimanche)</string>
+    <string name="notif_weekly">Alerte de fin de mois des projets</string>
+    <string name="notif_weekly_time">Heure de l\'alerte (3 jours avant la fin du mois)</string>
     <string name="settings_data">Données</string>
     <string name="settings_data_help">Sauvegardez vos données dans un fichier JSON, ou restaurez-les sur une autre installation.</string>
     <string name="export_json">Exporter en JSON</string>
@@ -269,6 +271,6 @@
     <string name="notif_eve_title">Échéance demain</string>
     <string name="notif_worksite_title">Chantiers à relancer</string>
     <string name="notif_worksite_line">%1$s : échéance dans %2$d j, sans session récente</string>
-    <string name="notif_weekly_title">Objectifs hebdomadaires à terminer</string>
+    <string name="notif_weekly_title">Objectifs du mois à terminer</string>
     <string name="notif_weekly_line">%1$s : encore %2$s</string>
 </resources>

@@ -80,7 +80,8 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.nyl.mytasks.R
-import com.nyl.mytasks.domain.ProjectWeek
+import com.nyl.mytasks.domain.MonthTotal
+import com.nyl.mytasks.domain.ProjectMonth
 import com.nyl.mytasks.domain.Task
 import com.nyl.mytasks.domain.TaskKind
 import com.nyl.mytasks.domain.TaskStatus
@@ -246,7 +247,7 @@ fun taskSubtitle(task: Task, kind: TaskKind, roomName: String?, sessions: Int = 
                     if (sessionMinutes > 0) " · " + formatMinutes(sessionMinutes) else ""
             }
         }
-        TaskKind.PROJECT -> task.weeklyGoalMinutes?.let { parts += stringResource(R.string.per_week, formatMinutes(it)) }
+        TaskKind.PROJECT -> task.monthlyGoalMinutes?.let { parts += stringResource(R.string.per_month, formatMinutes(it)) }
     }
     return parts.joinToString(" · ")
 }
@@ -268,13 +269,14 @@ fun TaskCard(
     type: TaskType?,
     roomName: String?,
     today: LocalDate,
-    project: ProjectWeek?,
+    project: ProjectMonth?,
     onClick: () -> Unit,
     onComplete: (() -> Unit)?,
     daysLateOverride: Int? = null,
     showType: Boolean = false,
     sessions: Int = 0,
     sessionMinutes: Int = 0,
+    history: List<MonthTotal> = emptyList(),
 ) {
     val context = androidx.compose.ui.platform.LocalContext.current
     val active = task.status.isActive
@@ -330,12 +332,21 @@ fun TaskCard(
                     LinearProgressIndicator(progress = { project.progress }, modifier = Modifier.fillMaxWidth())
                     Text(
                         buildString {
-                            append(stringResource(R.string.progress_minutes, formatMinutes(project.doneThisWeek), formatMinutes(project.target)))
+                            append(stringResource(R.string.progress_minutes, formatMinutes(project.doneThisMonth), formatMinutes(project.target)))
                             if (project.carryOver > 0) append(" · ").append(stringResource(R.string.catch_up, formatMinutes(project.carryOver)))
                         },
                         style = MaterialTheme.typography.labelSmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
+                    // Temps consacré mois par mois, objectif mensuel en repère.
+                    if (history.isNotEmpty()) {
+                        Spacer(Modifier.height(10.dp))
+                        MonthlyBars(history, project.goal, (type?.color ?: 0xFF607D8B).toColor())
+                        Text(
+                            stringResource(R.string.chart_legend, history.size, formatMinutes(project.goal)),
+                            style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
                 }
                 if (!active) {
                     Text(statusLabel(task.status), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)

@@ -79,9 +79,9 @@ class AppViewModel(private val container: AppContainer) : ViewModel() {
             TaskKind.DOMESTIC, TaskKind.ONE_OFF -> { complete(task.id); null }
             TaskKind.WORKSITE -> PendingCompletion(task, kind, 0)
             TaskKind.PROJECT -> {
-                val week = ProjectLogic.week(task, eventsByTask.value[task.id].orEmpty(), today.value)
-                val goal = task.weeklyGoalMinutes ?: 30
-                PendingCompletion(task, kind, if (week.remaining > 0) minOf(week.remaining, goal) else goal)
+                val week = ProjectLogic.month(task, eventsByTask.value[task.id].orEmpty(), today.value)
+                val goal = task.monthlyGoalMinutes ?: 60
+                PendingCompletion(task, kind, if (week.remaining > 0) minOf(week.remaining, goal, 60) else minOf(goal, 60))
             }
         }
     }

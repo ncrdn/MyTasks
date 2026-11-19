@@ -9,7 +9,7 @@ data class DashItem(
     val kind: TaskKind,
     /** Jours de retard (0 si pas en retard). */
     val daysLate: Int = 0,
-    val project: ProjectWeek? = null,
+    val project: ProjectMonth? = null,
 )
 
 enum class DeadlineLevel { UNDER_3_MONTHS, UNDER_6_MONTHS }
@@ -65,7 +65,7 @@ object DashboardCalculator {
 
             when (kind) {
                 TaskKind.PROJECT -> {
-                    val week = ProjectLogic.week(task, taskEvents, today)
+                    val week = ProjectLogic.month(task, taskEvents, today)
                     val item = DashItem(task, kind, project = week)
                     projects += item
                     if (week.isLate) {

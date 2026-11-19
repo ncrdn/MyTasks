@@ -49,7 +49,7 @@ data class TaskEntity(
     val recurrenceJson: String?,
     val anchorOnTheoretical: Boolean,
     val paused: Boolean,
-    val weeklyGoalMinutes: Int?,
+    val monthlyGoalMinutes: Int?,
 )
 
 @Entity(tableName = "task_events", indices = [Index("taskId")])
@@ -97,7 +97,7 @@ fun TaskEntity.toDomain() = Task(
     recurrence = BackupCodec.decodeRecurrence(recurrenceJson),
     anchorOnTheoretical = anchorOnTheoretical,
     paused = paused,
-    weeklyGoalMinutes = weeklyGoalMinutes,
+    monthlyGoalMinutes = monthlyGoalMinutes,
 )
 
 fun Task.toEntity() = TaskEntity(
@@ -117,7 +117,7 @@ fun Task.toEntity() = TaskEntity(
     recurrenceJson = BackupCodec.encodeRecurrence(recurrence),
     anchorOnTheoretical = anchorOnTheoretical,
     paused = paused,
-    weeklyGoalMinutes = weeklyGoalMinutes,
+    monthlyGoalMinutes = monthlyGoalMinutes,
 )
 
 fun EventEntity.toDomain() = TaskEvent(

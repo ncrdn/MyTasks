@@ -26,21 +26,23 @@ import java.util.concurrent.TimeUnit
 /** Planifie les rappels locaux (aucun serveur) : une chaîne de travaux uniques par type de rappel. */
 object ReminderScheduler {
     const val KIND_DAILY = "daily"
-    const val KIND_WEEKLY = "weekly"
+    const val KIND_MONTHLY = "monthly"
+    private const val LEGACY_WEEKLY = "weekly"
     private const val KEY_KIND = "kind"
 
     fun schedule(context: Context, settings: AppSettings, replace: Boolean) {
         val wm = WorkManager.getInstance(context)
+        wm.cancelUniqueWork(LEGACY_WEEKLY) // ancienne alerte hebdomadaire des projets
         if (!settings.notificationsEnabled) {
             wm.cancelUniqueWork(KIND_DAILY)
-            wm.cancelUniqueWork(KIND_WEEKLY)
+            wm.cancelUniqueWork(KIND_MONTHLY)
             return
         }
         enqueue(wm, KIND_DAILY, delayUntilDaily(settings, LocalDateTime.now()), replace)
         if (settings.weeklyEnabled) {
-            enqueue(wm, KIND_WEEKLY, delayUntilWeekly(settings, LocalDateTime.now()), replace)
+            enqueue(wm, KIND_MONTHLY, delayUntilMonthly(settings, LocalDateTime.now()), replace)
         } else {
-            wm.cancelUniqueWork(KIND_WEEKLY)
+            wm.cancelUniqueWork(KIND_MONTHLY)
         }
     }
 
@@ -50,8 +52,8 @@ object ReminderScheduler {
         val now = LocalDateTime.now()
         when (kind) {
             KIND_DAILY -> enqueueAfterSelf(context, KIND_DAILY, delayUntilDaily(settings, now))
-            KIND_WEEKLY -> if (settings.weeklyEnabled) {
-                enqueueAfterSelf(context, KIND_WEEKLY, delayUntilWeekly(settings, now))
+            KIND_MONTHLY -> if (settings.weeklyEnabled) {
+                enqueueAfterSelf(context, KIND_MONTHLY, delayUntilMonthly(settings, now))
             }
         }
     }
@@ -78,11 +80,15 @@ object ReminderScheduler {
         return Duration.between(now, target)
     }
 
-    /** Alerte hebdomadaire : le dimanche soir. */
-    internal fun delayUntilWeekly(s: AppSettings, now: LocalDateTime): Duration {
+    /** Alerte de fin de mois (objectifs mensuels des projets) : l'avant-avant-dernier jour du mois, à l'heure choisie. */
+    internal fun delayUntilMonthly(s: AppSettings, now: LocalDateTime): Duration {
         val time = LocalTime.of(s.weeklyHour, s.weeklyMinute)
-        var target = now.toLocalDate().atTime(time)
-        while (target.dayOfWeek != DayOfWeek.SUNDAY || !target.isAfter(now.plusMinutes(1))) target = target.plusDays(1)
+        var month = java.time.YearMonth.from(now)
+        var target = month.atEndOfMonth().minusDays(2).atTime(time)
+        while (!target.isAfter(now.plusMinutes(1))) {
+            month = month.plusMonths(1)
+            target = month.atEndOfMonth().minusDays(2).atTime(time)
+        }
         return Duration.between(now, target)
     }
 }
@@ -94,7 +100,7 @@ class ReminderWorker(context: Context, params: WorkerParameters) : CoroutineWork
         val settings = applicationContext.container.settings.flow.first()
         if (settings.notificationsEnabled) {
             runCatching {
-                if (kind == ReminderScheduler.KIND_WEEKLY) weeklyAlert() else dailyReminders(settings)
+                if (kind == ReminderScheduler.KIND_MONTHLY) monthlyAlert() else dailyReminders(settings)
             }
         }
         ReminderScheduler.scheduleNext(applicationContext, settings, kind)
@@ -148,7 +154,7 @@ class ReminderWorker(context: Context, params: WorkerParameters) : CoroutineWork
         }
     }
 
-    private suspend fun weeklyAlert() {
+    private suspend fun monthlyAlert() {
         val ctx = applicationContext
         val repo = ctx.container.repository
         val today: LocalDate = ctx.container.clock.now()

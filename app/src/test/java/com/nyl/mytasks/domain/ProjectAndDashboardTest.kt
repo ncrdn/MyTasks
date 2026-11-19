@@ -12,45 +12,72 @@ import java.time.LocalDate
 class ProjectAndDashboardTest {
     private fun d(s: String) = LocalDate.parse(s)
 
+    // Objectif : 6 h par mois (360 min).
     private val spanish = Task(
         id = "p1", typeId = "project", title = "Apprendre l'espagnol",
-        createdAt = d("2026-11-02"), weeklyGoalMinutes = 90,
+        createdAt = d("2026-11-02"), monthlyGoalMinutes = 360,
     )
+    // Même projet, commencé en septembre : deux mois complets sont écoulés en novembre.
+    private val spanishSince = spanish.copy(createdAt = d("2026-09-10"))
 
     private fun session(date: String, minutes: Int, task: String = "p1") = TaskEvent(
         id = "$task-$date-$minutes", taskId = task, kind = EventKind.SESSION, date = d(date), minutes = minutes,
     )
 
-    @Test fun project_currentWeekOnly_isNotLate() {
-        val w = ProjectLogic.week(spanish, listOf(session("2026-11-03", 30)), d("2026-11-04"))
-        assertFalse(w.isLate)
-        assertEquals(30, w.doneThisWeek)
-        assertEquals(60, w.remaining)
+    @Test fun project_currentMonthOnly_isNotLate() {
+        val m = ProjectLogic.month(spanish, listOf(session("2026-11-03", 120)), d("2026-11-20"))
+        assertFalse(m.isLate)
+        assertEquals(120, m.doneThisMonth)
+        assertEquals(240, m.remaining)
     }
 
-    @Test fun project_missedWeeks_accumulateCarryOver() {
-        val sessions = listOf(session("2026-11-03", 60), session("2026-11-16", 30))
-        val w = ProjectLogic.week(spanish, sessions, d("2026-11-17"))
-        // semaine du 2/11 : 30 de retard ; semaine du 9/11 : 90 de retard => 120 à rattraper
-        assertEquals(120, w.carryOver)
-        assertEquals(210, w.target)
-        assertEquals(180, w.remaining)
-        assertTrue(w.isLate)
-        assertEquals(d("2026-11-08"), w.lateSince)
+    @Test fun project_missedMonths_accumulateCarryOver() {
+        val sessions = listOf(session("2026-09-12", 120), session("2026-11-16", 60))
+        val m = ProjectLogic.month(spanishSince, sessions, d("2026-11-17"))
+        // septembre : 240 de retard ; octobre (rien fait) : 360 de plus => 600 à rattraper
+        assertEquals(600, m.carryOver)
+        assertEquals(960, m.target)
+        assertEquals(900, m.remaining)
+        assertTrue(m.isLate)
+        assertEquals(d("2026-09-30"), m.lateSince) // en retard dès la fin du mois non atteint
     }
 
     @Test fun project_surplusAbsorbsLateness() {
-        val sessions = listOf(session("2026-11-03", 30), session("2026-11-10", 150))
-        val w = ProjectLogic.week(spanish, sessions, d("2026-11-17"))
-        assertEquals(0, w.carryOver)
-        assertFalse(w.isLate)
-        assertNull(w.lateSince)
+        val sessions = listOf(session("2026-09-12", 120), session("2026-10-10", 800))
+        val m = ProjectLogic.month(spanishSince, sessions, d("2026-11-17"))
+        assertEquals(0, m.carryOver)
+        assertFalse(m.isLate)
+        assertNull(m.lateSince)
     }
 
-    @Test fun project_goalReachedThisWeek() {
-        val w = ProjectLogic.week(spanish, listOf(session("2026-11-02", 90)), d("2026-11-05"))
-        assertTrue(w.reached)
-        assertEquals(1f, w.progress, 0.0001f)
+    @Test fun project_goalReachedThisMonth() {
+        val m = ProjectLogic.month(spanish, listOf(session("2026-11-02", 200), session("2026-11-15", 160)), d("2026-11-20"))
+        assertTrue(m.reached)
+        assertEquals(1f, m.progress, 0.0001f)
+    }
+
+    @Test fun project_notLateUntilTheMonthEnds() {
+        // Le 30 novembre l'objectif n'est pas atteint mais le mois n'est pas fini ; le 1er décembre il est en retard.
+        assertFalse(ProjectLogic.month(spanish, emptyList(), d("2026-11-30")).isLate)
+        assertTrue(ProjectLogic.month(spanish, emptyList(), d("2026-12-01")).isLate)
+    }
+
+    @Test fun project_history_lastTwelveMonthsWithTotals() {
+        val sessions = listOf(session("2026-11-03", 100), session("2026-11-20", 50), session("2026-09-01", 30), session("2025-10-01", 999))
+        val h = ProjectLogic.history(sessions, d("2026-11-20"))
+        assertEquals(12, h.size)
+        assertEquals(java.time.YearMonth.of(2025, 12), h.first().month) // 12 derniers mois : déc. 2025 → nov. 2026
+        assertEquals(java.time.YearMonth.of(2026, 11), h.last().month)
+        assertEquals(150, h.last().minutes)
+        assertEquals(30, h.first { it.month == java.time.YearMonth.of(2026, 9) }.minutes)
+        assertTrue(h.none { it.minutes == 999 }) // hors fenêtre
+    }
+
+    @Test fun backup_oldWeeklyGoals_areConvertedToMonthly() {
+        val v2 = """{"version":2,"types":[],"rooms":[],"events":[],"tasks":[
+            {"id":"p","typeId":"project","title":"X","createdAt":"2026-11-02","weeklyGoalMinutes":90}]}"""
+        val task = BackupCodec.decode(v2).tasks.single()
+        assertEquals(360, task.monthlyGoalMinutes) // 1 h 30 / semaine → 6 h / mois
     }
 
     private val kinds = mapOf(
@@ -106,7 +133,7 @@ class ProjectAndDashboardTest {
     }
 
     @Test fun dashboard_projectLateAppearsInOverdue() {
-        val s = dash(listOf(spanish), emptyList(), "2026-11-17")
+        val s = dash(listOf(spanishSince), emptyList(), "2026-11-17")
         assertEquals(1, s.overdueCount)
         assertEquals(1, s.projects.size)
     }

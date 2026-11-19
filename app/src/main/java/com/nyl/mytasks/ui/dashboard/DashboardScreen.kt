@@ -179,7 +179,7 @@ private fun WeekProgress(s: DashboardState, types: List<TaskType>, onOpenTask: (
                         )
                         Text(
                             buildString {
-                                append(stringResource(R.string.progress_minutes, formatMinutes(w.doneThisWeek), formatMinutes(w.target)))
+                                append(stringResource(R.string.progress_minutes, formatMinutes(w.doneThisMonth), formatMinutes(w.target)))
                                 if (w.carryOver > 0) append(" · ").append(stringResource(R.string.catch_up, formatMinutes(w.carryOver)))
                             },
                             style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant,
