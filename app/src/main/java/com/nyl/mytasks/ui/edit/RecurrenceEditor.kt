@@ -46,7 +46,7 @@ class RecurrenceForm(start: LocalDate) {
     fun load(rule: Recurrence?) {
         when (rule) {
             null -> mode = RecurrenceMode.NONE
-            is Recurrence.Weekly -> { mode = RecurrenceMode.WEEKLY; everyWeeks = rule.everyWeeks.toString(); days = rule.days }
+            is Recurrence.Weekly -> { mode = RecurrenceMode.WEEKLY; everyWeeks = rule.everyWeeks.toString(); days = setOfNotNull(rule.days.minByOrNull { it.value }) }
             is Recurrence.MonthlyDay -> { mode = RecurrenceMode.MONTHLY_DAY; monthDay = rule.dayOfMonth.toString() }
             is Recurrence.MonthlyNthWeekday -> { mode = RecurrenceMode.MONTHLY_NTH; nth = rule.nth; nthDay = rule.dayOfWeek }
             is Recurrence.Yearly -> { mode = RecurrenceMode.YEARLY; yearDay = rule.day.toString(); yearMonth = rule.month }
@@ -90,7 +90,8 @@ fun RecurrenceEditor(form: RecurrenceForm) {
                     DayOfWeek.entries.forEach { d ->
                         FilterChip(
                             selected = d in form.days,
-                            onClick = { form.days = if (d in form.days) form.days - d else form.days + d },
+                            // Sélection exclusive : choisir un jour désélectionne le précédent.
+                            onClick = { form.days = setOf(d) },
                             label = { Text(dayName(d, short = true)) },
                         )
                     }
