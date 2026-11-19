@@ -189,6 +189,21 @@ fun Pill(text: String, container: Color, content: Color, modifier: Modifier = Mo
     )
 }
 
+/** Pastille « 4 pts » : poids d'un travail dans le quota annuel. */
+@Composable
+fun PointsBadge(points: Int, color: Color, modifier: Modifier = Modifier) {
+    val ink = androidx.compose.ui.graphics.lerp(color, MaterialTheme.colorScheme.onSurface, 0.5f)
+    Text(
+        stringResource(R.string.points_value, points),
+        style = MaterialTheme.typography.labelLarge,
+        fontWeight = androidx.compose.ui.text.font.FontWeight.ExtraBold,
+        color = ink,
+        maxLines = 1,
+        modifier = modifier.padding(start = 8.dp).clip(RoundedCornerShape(12.dp)).background(color.copy(alpha = 0.2f))
+            .padding(horizontal = 10.dp, vertical = 5.dp),
+    )
+}
+
 @Composable
 fun OverduePill(text: String) =
     Pill(text, MaterialTheme.colorScheme.errorContainer, MaterialTheme.colorScheme.onErrorContainer)
@@ -222,7 +237,6 @@ fun taskSubtitle(task: Task, kind: TaskKind, roomName: String?): String {
         }
         TaskKind.WORKSITE -> {
             roomName?.let(parts::add)
-            task.effort?.let { parts += stringResource(R.string.effort_short, it) }
             task.priority?.let { parts += stringResource(R.string.priority_short, it) }
             task.dueDate?.let { parts += stringResource(R.string.before_end_of, it.year) }
         }
@@ -280,14 +294,19 @@ fun TaskCard(
         ) {
             TypeBadge(type)
             Column(Modifier.weight(1f).padding(horizontal = 12.dp)) {
-                Text(
-                    task.title,
-                    style = MaterialTheme.typography.titleMedium,
-                    maxLines = 2,
-                    overflow = TextOverflow.Ellipsis,
-                    textDecoration = if (active) null else TextDecoration.LineThrough,
-                    color = if (active) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurfaceVariant,
-                )
+                Row(verticalAlignment = Alignment.Top) {
+                    Text(
+                        task.title,
+                        modifier = Modifier.weight(1f),
+                        style = MaterialTheme.typography.titleMedium,
+                        maxLines = 2,
+                        overflow = TextOverflow.Ellipsis,
+                        textDecoration = if (active) null else TextDecoration.LineThrough,
+                        color = if (active) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                    // Travaux : le poids en points d'effort, bien visible et distinct de la priorité.
+                    if (kind == TaskKind.WORKSITE) task.effort?.let { PointsBadge(it, (type?.color ?: 0xFF607D8B).toColor()) }
+                }
                 if (showType && type != null) {
                     Text(type.label, style = MaterialTheme.typography.labelSmall, color = type.color.toColor())
                 }
