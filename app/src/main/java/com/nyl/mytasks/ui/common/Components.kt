@@ -1,6 +1,8 @@
 package com.nyl.mytasks.ui.common
 
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.material.icons.filled.ExpandMore
+import androidx.compose.material3.Surface
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -402,7 +404,10 @@ fun DatePickerDialogFor(initial: LocalDate?, onDismiss: () -> Unit, onPick: (Loc
 
 // Champs de formulaire (texte, nombre, date, liste déroulante) : voir FormComponents.kt.
 
-/** Puce de filtre avec menu déroulant. */
+/**
+ * Filtre avec menu déroulant, dans le même style que les listes déroulantes des formulaires : pastille arrondie
+ * (teintée indigo quand un filtre est actif), chevron, menu arrondi et option courante cochée.
+ */
 @Composable
 fun <T> DropdownChip(
     label: String,
@@ -412,16 +417,36 @@ fun <T> DropdownChip(
     selected: Boolean,
 ) {
     var open by remember { mutableStateOf(false) }
+    val container = if (selected) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surfaceContainerLow
+    val content = if (selected) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurface
     Box {
-        FilterChip(
-            selected = selected,
+        Surface(
             onClick = { open = true },
-            label = { Text(label, maxLines = 1) },
-            trailingIcon = { Icon(Icons.Filled.ArrowDropDown, contentDescription = null, modifier = Modifier.size(18.dp)) },
-        )
-        DropdownMenu(expanded = open, onDismissRequest = { open = false }) {
+            shape = RoundedCornerShape(14.dp),
+            color = container,
+            border = BorderStroke(1.dp, if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outlineVariant),
+        ) {
+            Row(
+                Modifier.heightIn(min = 44.dp).padding(start = 14.dp, end = 8.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Text(label, style = MaterialTheme.typography.labelLarge, color = content, maxLines = 1)
+                Icon(Icons.Filled.ExpandMore, contentDescription = null, tint = content, modifier = Modifier.padding(start = 2.dp).size(20.dp))
+            }
+        }
+        DropdownMenu(
+            expanded = open,
+            onDismissRequest = { open = false },
+            shape = RoundedCornerShape(20.dp),
+            containerColor = MaterialTheme.colorScheme.surfaceContainerLow,
+        ) {
             options.forEach { opt ->
-                DropdownMenuItem(text = { Text(optionText(opt)) }, onClick = { open = false; onSelect(opt) })
+                val text = optionText(opt)
+                DropdownMenuItem(
+                    text = { Text(text, style = MaterialTheme.typography.bodyLarge) },
+                    trailingIcon = if (text == label) ({ Icon(Icons.Filled.Check, contentDescription = null, tint = MaterialTheme.colorScheme.primary) }) else null,
+                    onClick = { open = false; onSelect(opt) },
+                )
             }
         }
     }

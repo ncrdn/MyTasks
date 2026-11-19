@@ -94,7 +94,7 @@ private fun RowScope.NavPill(selected: Boolean, icon: ImageVector, label: String
         horizontalArrangement = Arrangement.Center,
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Icon(icon, contentDescription = null, tint = if (selected) Palette.Ink else Color(0xFFB9B7DA), modifier = Modifier.size(22.dp))
+        Icon(icon, contentDescription = null, tint = if (selected) Palette.Ink else Palette.NavIcon, modifier = Modifier.size(22.dp))
         if (selected) {
             Text(
                 label, Modifier.padding(start = 6.dp).weight(1f, fill = false), color = Palette.Ink, maxLines = 2,
@@ -139,7 +139,7 @@ fun AppRoot(vm: AppViewModel) {
                 Surface(
                     modifier = Modifier.navigationBarsPadding().padding(start = 16.dp, end = 16.dp, bottom = 12.dp, top = 4.dp),
                     shape = RoundedCornerShape(34.dp),
-                    color = Palette.Ink,
+                    color = com.nyl.mytasks.ui.theme.navBarColor(),
                     shadowElevation = 12.dp,
                 ) {
                     Row(

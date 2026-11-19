@@ -17,15 +17,23 @@ import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
-/** Palette « indigo » : fond lavande très clair, cartes blanches, barre de navigation encre. */
+/**
+ * Palette : fonds neutres (gris clair / graphite) pour que l'indigo, seule couleur d'accent de l'interface,
+ * ressorte au lieu de se fondre dans un fond bleuté. Les types de tâches gardent leur propre couleur.
+ */
 object Palette {
-    val Ink = Color(0xFF16143A)
-    val InkMuted = Color(0xFF62607F)
-    val Ground = Color(0xFFF4F3FA)
+    val Ink = Color(0xFF1B1B21)
+    val InkMuted = Color(0xFF5F5F6B)
+    val Ground = Color(0xFFF5F5F7)
     val Indigo = Color(0xFF4F46E5)
     val IndigoSoft = Color(0xFFE8E7FD)
     val IndigoOnDark = Color(0xFF9C97FF)
     val OnIndigoMuted = Color(0xFFDCDAFA)
+
+    /** Barre de navigation flottante : encre en clair, graphite surélevé en sombre. */
+    val NavLight = Color(0xFF1B1B21)
+    val NavDark = Color(0xFF2E2E35)
+    val NavIcon = Color(0xFFB4B4BF)
 }
 
 private val Light = lightColorScheme(
@@ -35,7 +43,7 @@ private val Light = lightColorScheme(
     onPrimaryContainer = Color(0xFF2B2599),
     secondary = Palette.Ink,
     onSecondary = Color.White,
-    secondaryContainer = Color(0xFFE6E4F4),
+    secondaryContainer = Color(0xFFE9E9EE),
     onSecondaryContainer = Palette.Ink,
     tertiary = Color(0xFFA12474),
     tertiaryContainer = Color(0xFFFCE4F2),
@@ -48,42 +56,44 @@ private val Light = lightColorScheme(
     surface = Palette.Ground,
     onSurface = Palette.Ink,
     onSurfaceVariant = Palette.InkMuted,
-    outline = Color(0xFF8A88A8),
-    outlineVariant = Color(0xFFE1DFF0),
-    surfaceContainerLowest = Color(0xFFFAFAFE),
+    outline = Color(0xFF8A8A96),
+    outlineVariant = Color(0xFFDEDEE4),
+    // Cartes blanches sur fond gris ; les champs de saisie (« Lowest ») sont légèrement grisés dans les cartes.
+    surfaceContainerLowest = Color(0xFFF1F1F4),
     surfaceContainerLow = Color.White,
-    surfaceContainer = Color(0xFFEFEEF8),
-    surfaceContainerHigh = Color(0xFFE8E7F3),
-    surfaceContainerHighest = Color(0xFFE1E0EE),
+    surfaceContainer = Color(0xFFEDEDF1),
+    surfaceContainerHigh = Color(0xFFE6E6EB),
+    surfaceContainerHighest = Color(0xFFDFDFE5),
 )
 
 private val Dark = darkColorScheme(
     primary = Palette.IndigoOnDark,
     onPrimary = Color(0xFF15123F),
-    primaryContainer = Color(0xFF2E2A7A),
-    onPrimaryContainer = Color(0xFFE0DEFF),
-    secondary = Color(0xFFF1F0FF),
-    onSecondary = Color(0xFF16143A),
-    secondaryContainer = Color(0xFF2A2850),
-    onSecondaryContainer = Color(0xFFF1F0FF),
+    primaryContainer = Color(0xFF3A3680),
+    onPrimaryContainer = Color(0xFFE3E1FF),
+    secondary = Color(0xFFECECF1),
+    onSecondary = Color(0xFF1B1B21),
+    secondaryContainer = Color(0xFF33333B),
+    onSecondaryContainer = Color(0xFFECECF1),
     tertiary = Color(0xFFFF7AC6),
     tertiaryContainer = Color(0xFF5E0F43),
     onTertiaryContainer = Color(0xFFFFD9EE),
     error = Color(0xFFFF6B76),
     errorContainer = Color(0xFF5A1A21),
     onErrorContainer = Color(0xFFFFD6D9),
-    background = Color(0xFF100F24),
-    onBackground = Color(0xFFF1F0FF),
-    surface = Color(0xFF100F24),
-    onSurface = Color(0xFFF1F0FF),
-    onSurfaceVariant = Color(0xFFA9A7CC),
-    outline = Color(0xFF7C7A9E),
-    outlineVariant = Color(0xFF34325A),
-    surfaceContainerLowest = Color(0xFF16152E),
-    surfaceContainerLow = Color(0xFF1B1A38),
-    surfaceContainer = Color(0xFF211F42),
-    surfaceContainerHigh = Color(0xFF29274D),
-    surfaceContainerHighest = Color(0xFF312F58),
+    background = Color(0xFF111114),
+    onBackground = Color(0xFFECECF1),
+    surface = Color(0xFF111114),
+    onSurface = Color(0xFFECECF1),
+    onSurfaceVariant = Color(0xFFA6A6B2),
+    outline = Color(0xFF7E7E8A),
+    outlineVariant = Color(0xFF3B3B44),
+    // Graphite neutre : cartes plus claires que le fond, champs plus sombres que les cartes.
+    surfaceContainerLowest = Color(0xFF17171B),
+    surfaceContainerLow = Color(0xFF1F1F24),
+    surfaceContainer = Color(0xFF26262C),
+    surfaceContainerHigh = Color(0xFF2E2E35),
+    surfaceContainerHighest = Color(0xFF37373F),
 )
 
 private val AppShapes = Shapes(
@@ -108,6 +118,10 @@ private val AppTypography = Typography().let { t ->
 
 /** Titre d'écran en grand (remplace la barre d'application classique). */
 val ScreenTitleStyle = TextStyle(fontSize = 30.sp, lineHeight = 36.sp, fontWeight = FontWeight.ExtraBold, letterSpacing = (-0.5).sp)
+
+/** Couleur de la barre de navigation flottante selon le thème. */
+@Composable
+fun navBarColor(): Color = if (isSystemInDarkTheme()) Palette.NavDark else Palette.NavLight
 
 /** [fontScale] : multiplicateur utilisateur appliqué en plus de la taille de police système. */
 @Composable
