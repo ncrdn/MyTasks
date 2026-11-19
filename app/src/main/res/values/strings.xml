@@ -205,10 +205,17 @@
     <string name="rec_custom_desc">Tous les %1$d jours</string>
 
     <!-- Tableau de bord -->
-    <string name="dash_today">Aujourd\'hui</string>
+    <string name="dash_today">À faire aujourd\'hui</string>
     <string name="dash_today_empty">Rien de prévu aujourd\'hui.</string>
     <string name="dash_overdue">Retards</string>
     <string name="dash_overdue_empty">Aucun retard, bravo !</string>
+    <string name="dash_progress">Avancement</string>
+    <string name="this_week">Cette semaine</string>
+    <string name="dash_later_this_week">À faire cette semaine</string>
+    <string name="dash_week_empty">Rien d\'autre de prévu cette semaine.</string>
+    <string name="dash_count">%1$d / %2$d</string>
+    <string name="dash_points_count">%1$d / %2$d pts</string>
+    <string name="dash_time_spent">%1$s consacrées</string>
     <string name="dash_week_progress">Avancement de la semaine</string>
     <string name="dash_domestic_progress">%1$d occurrence(s) faite(s) sur %2$d prévue(s)</string>
     <string name="dash_no_project">Aucun projet en cours.</string>

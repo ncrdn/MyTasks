@@ -118,6 +118,49 @@ class ProjectAndDashboardTest {
         assertTrue(s.todayItems.none { it.kind == TaskKind.DOMESTIC })
     }
 
+    @Test fun dashboard_laterThisWeekListsRecurringAndOneOffTasksAfterToday() {
+        // Mardi 17 : le colis (vendredi 20) est « à faire cette semaine » ; la poubelle (aujourd'hui) est dans « aujourd'hui ».
+        val s = dash(listOf(trash, parcel), emptyList(), "2026-11-17")
+        assertEquals(listOf("t2"), s.weekItems.map { it.task.id })
+        assertEquals(listOf("t1"), s.todayItems.map { it.task.id })
+        // Dimanche prochain : la semaine suivante n'apparaît pas.
+        val next = trash.copy(id = "t9", dueDate = d("2026-11-24"))
+        assertTrue(dash(listOf(next), emptyList(), "2026-11-17").weekItems.isEmpty())
+    }
+
+    @Test fun dashboard_progressGaugesWithHours() {
+        val cooked = trash.copy(estimatedMinutes = 30) // fait 1 fois cette semaine, plus une prévue avant dimanche
+        val parcel2 = parcel.copy(estimatedMinutes = 20)
+        val ev = TaskEvent("e1", "t1", EventKind.DONE, d("2026-11-16"))
+        val s = dash(listOf(cooked, parcel2), listOf(ev), "2026-11-17")
+        assertEquals(1, s.recurring.done)
+        assertEquals(2, s.recurring.planned)
+        assertEquals(30, s.recurring.doneMinutes)
+        assertEquals(60, s.recurring.plannedMinutes)
+        assertEquals(0.5f, s.recurring.ratio, 0.0001f)
+        assertEquals(0, s.oneOff.done)
+        assertEquals(1, s.oneOff.planned)
+        assertEquals(20, s.oneOff.plannedMinutes)
+    }
+
+    @Test fun dashboard_worksiteYearGauge_pointsOverQuota() {
+        val a = salon.copy(id = "wa", dueDate = d("2026-12-31"), effort = 4)
+        val b = salon.copy(id = "wb", dueDate = d("2026-12-31"), effort = 5, status = TaskStatus.DONE)
+        val other = salon.copy(id = "wc", dueDate = d("2027-12-31"), effort = 9)
+        val ev = TaskEvent("s1", "wa", EventKind.SESSION, d("2026-11-10"), minutes = 90)
+        val s = DashboardCalculator.compute(listOf(a, b, other), listOf(ev), { kinds[it] }, d("2026-11-17"), yearQuota = 45)
+        assertEquals(9, s.worksitesYear.done)   // points engagés sur 2026 (la tâche terminée reste consommée)
+        assertEquals(45, s.worksitesYear.planned)
+        assertEquals(90, s.worksitesYear.doneMinutes)
+    }
+
+    @Test fun dashboard_projectsMonthGauge_sumsMinutesOverGoal() {
+        val s = dash(listOf(spanish), listOf(session("2026-11-03", 120)), "2026-11-17")
+        assertEquals(120, s.projectsMonth.doneMinutes)
+        assertEquals(360, s.projectsMonth.plannedMinutes)
+        assertEquals(1, s.projectsMonth.planned)
+    }
+
     @Test fun dashboard_oneOffBecomesOverdueTheDayAfter() {
         assertEquals(0, dash(listOf(parcel), emptyList(), "2026-11-20").overdueCount)
         assertEquals(1, dash(listOf(parcel), emptyList(), "2026-11-20").todayItems.size)

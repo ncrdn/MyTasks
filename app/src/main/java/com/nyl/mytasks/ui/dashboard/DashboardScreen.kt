@@ -1,28 +1,32 @@
 package com.nyl.mytasks.ui.dashboard
 
+import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.IntrinsicSize
+import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -30,14 +34,25 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.nyl.mytasks.R
 import com.nyl.mytasks.domain.DashItem
 import com.nyl.mytasks.domain.DashboardState
 import com.nyl.mytasks.domain.DeadlineLevel
+import com.nyl.mytasks.domain.Progress
 import com.nyl.mytasks.domain.TaskKind
 import com.nyl.mytasks.domain.TaskType
 import com.nyl.mytasks.ui.AppViewModel
@@ -47,16 +62,12 @@ import com.nyl.mytasks.ui.common.OverduePill
 import com.nyl.mytasks.ui.common.PendingCompletion
 import com.nyl.mytasks.ui.common.RoundAction
 import com.nyl.mytasks.ui.common.ScreenHeader
-import com.nyl.mytasks.ui.theme.Palette
-import androidx.compose.foundation.background
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import com.nyl.mytasks.ui.common.SectionTitle
 import com.nyl.mytasks.ui.common.TaskCard
 import com.nyl.mytasks.ui.common.formatLong
 import com.nyl.mytasks.ui.common.formatMinutes
 import com.nyl.mytasks.ui.common.toColor
+import com.nyl.mytasks.ui.theme.Palette
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -93,26 +104,37 @@ fun DashboardScreen(
             contentPadding = PaddingValues(start = 16.dp, end = 16.dp, bottom = 24.dp),
             verticalArrangement = Arrangement.spacedBy(10.dp),
         ) {
-            // --- Statistiques (carte principale en tête) ---
-            item { Stats(s) }
+            // --- Avancement : jauges par type, tout en haut ---
+            item(key = "progress") { ProgressBlock(s, types) }
 
-            // --- Aujourd'hui ---
-            item { SectionTitle(stringResource(R.string.dash_today), s.todayItems.size) }
-            if (s.todayItems.isEmpty()) item { EmptyState(stringResource(R.string.dash_today_empty)) }
-            items(s.todayItems, key = { "today-" + it.task.id }) { item ->
-                DashRow(item, typeById, roomNames, s, onOpenTask) { pending = vm.beginComplete(item.task) }
-            }
-
-            // --- Retards ---
-            item { SectionTitle(stringResource(R.string.dash_overdue), s.overdueCount) }
-            if (s.overdueItems.isEmpty()) item { EmptyState(stringResource(R.string.dash_overdue_empty)) }
+            // --- En retard ---
+            item(key = "late-title") { SectionTitle(stringResource(R.string.dash_overdue), s.overdueCount) }
+            if (s.overdueItems.isEmpty()) item(key = "late-empty") { EmptyState(stringResource(R.string.dash_overdue_empty)) }
             items(s.overdueItems, key = { "late-" + it.task.id }) { item ->
                 DashRow(item, typeById, roomNames, s, onOpenTask) { pending = vm.beginComplete(item.task) }
             }
 
-            // --- Avancement de la semaine ---
-            item { SectionTitle(stringResource(R.string.dash_week_progress)) }
-            item { WeekProgress(s, types, onOpenTask) }
+            // --- À faire aujourd'hui ---
+            item(key = "today-title") { SectionTitle(stringResource(R.string.dash_today), s.todayItems.size) }
+            if (s.todayItems.isEmpty()) item(key = "today-empty") { EmptyState(stringResource(R.string.dash_today_empty)) }
+            items(s.todayItems, key = { "today-" + it.task.id }) { item ->
+                DashRow(item, typeById, roomNames, s, onOpenTask) { pending = vm.beginComplete(item.task) }
+            }
+
+            // --- À faire cette semaine (tâches récurrentes et ponctuelles) ---
+            item(key = "week-title") { SectionTitle(stringResource(R.string.dash_later_this_week), s.weekItems.size) }
+            if (s.weekItems.isEmpty()) item(key = "week-empty") { EmptyState(stringResource(R.string.dash_week_empty)) }
+            items(s.weekItems, key = { "week-" + it.task.id }) { item ->
+                DashRow(item, typeById, roomNames, s, onOpenTask) { pending = vm.beginComplete(item.task) }
+            }
+
+            // --- Travaux : sessions de la semaine, échéances annuelles qui approchent ---
+            if (s.worksiteSessionsThisWeek > 0 || s.worksiteDeadlines.isNotEmpty()) {
+                item(key = "worksites") { WorksiteCard(s, types.firstOrNull { it.kind == TaskKind.WORKSITE }) }
+            }
+
+            // --- Statistiques ---
+            item(key = "stats") { Stats(s) }
         }
     }
 
@@ -140,82 +162,154 @@ private fun DashRow(
     )
 }
 
+// --- Bloc « Avancement » ---
+
+/**
+ * Quatre jauges d'accomplissement : tâches récurrentes et ponctuelles sur la semaine, projets sur le mois,
+ * travaux sur l'année (points d'effort consommés / quota), avec le décompte des heures quand il est connu.
+ */
 @Composable
-private fun WeekProgress(s: DashboardState, types: List<TaskType>, onOpenTask: (String) -> Unit) {
-    fun label(kind: TaskKind) = types.firstOrNull { it.kind == kind }?.label.orEmpty()
-    fun color(kind: TaskKind) = (types.firstOrNull { it.kind == kind }?.color ?: 0xFF607D8B).toColor()
+private fun ProgressBlock(s: DashboardState, types: List<TaskType>) {
+    fun typeOf(kind: TaskKind) = types.firstOrNull { it.kind == kind }
+    fun label(kind: TaskKind) = typeOf(kind)?.label.orEmpty()
+    fun color(kind: TaskKind) = (typeOf(kind)?.color ?: 0xFF607D8B).toColor()
+
+    @Composable
+    fun pairOf(p: Progress): String? =
+        if (p.plannedMinutes > 0) stringResource(R.string.progress_minutes, formatMinutes(p.doneMinutes), formatMinutes(p.plannedMinutes))
+        else if (p.doneMinutes > 0) stringResource(R.string.dash_time_spent, formatMinutes(p.doneMinutes))
+        else null
 
     Card(
-        Modifier.fillMaxWidth(), shape = RoundedCornerShape(24.dp),
+        Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(28.dp),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow),
     ) {
-        Column(Modifier.padding(18.dp), verticalArrangement = Arrangement.spacedBy(18.dp)) {
-            // Récurrentes : X occurrences faites / Y prévues
-            Column {
-                Text(label(TaskKind.DOMESTIC), style = MaterialTheme.typography.titleSmall, color = color(TaskKind.DOMESTIC))
-                Text(stringResource(R.string.dash_domestic_progress, s.domesticDone, s.domesticPlanned))
-                LinearProgressIndicator(
-                    progress = { if (s.domesticPlanned == 0) 1f else s.domesticDone.toFloat() / s.domesticPlanned },
-                    modifier = Modifier.fillMaxWidth().padding(top = 6.dp),
-                    color = color(TaskKind.DOMESTIC),
+        Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+            Text(stringResource(R.string.dash_progress), style = MaterialTheme.typography.titleLarge, modifier = Modifier.padding(start = 4.dp))
+            Row(Modifier.height(IntrinsicSize.Max), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                GaugeTile(
+                    label = label(TaskKind.DOMESTIC), period = stringResource(R.string.this_week), color = color(TaskKind.DOMESTIC),
+                    ratio = s.recurring.ratio, empty = s.recurring.planned == 0,
+                    count = stringResource(R.string.dash_count, s.recurring.done, s.recurring.planned),
+                    hours = pairOf(s.recurring), modifier = Modifier.weight(1f).fillMaxHeight(),
+                )
+                GaugeTile(
+                    label = label(TaskKind.ONE_OFF), period = stringResource(R.string.this_week), color = color(TaskKind.ONE_OFF),
+                    ratio = s.oneOff.ratio, empty = s.oneOff.planned == 0,
+                    count = stringResource(R.string.dash_count, s.oneOff.done, s.oneOff.planned),
+                    hours = pairOf(s.oneOff), modifier = Modifier.weight(1f).fillMaxHeight(),
                 )
             }
-
-            // Projets : temps réalisé / objectif hebdo
-            Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                Text(label(TaskKind.PROJECT), style = MaterialTheme.typography.titleSmall, color = color(TaskKind.PROJECT))
-                if (s.projects.isEmpty()) Text(stringResource(R.string.dash_no_project), color = MaterialTheme.colorScheme.onSurfaceVariant)
-                s.projects.forEach { p ->
-                    val w = p.project ?: return@forEach
-                    Column {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Text(p.task.title, Modifier.weight(1f), style = MaterialTheme.typography.bodyMedium)
-                            if (w.isLate) OverduePill(stringResource(R.string.late_label))
-                        }
-                        LinearProgressIndicator(
-                            progress = { w.progress }, modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
-                            color = color(TaskKind.PROJECT),
-                        )
-                        Text(
-                            buildString {
-                                append(stringResource(R.string.progress_minutes, formatMinutes(w.doneThisMonth), formatMinutes(w.target)))
-                                if (w.carryOver > 0) append(" · ").append(stringResource(R.string.catch_up, formatMinutes(w.carryOver)))
-                            },
-                            style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
-                    }
-                }
-            }
-
-            // Chantiers : sessions de la semaine, échéances annuelles qui approchent
-            Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                Text(label(TaskKind.WORKSITE), style = MaterialTheme.typography.titleSmall, color = color(TaskKind.WORKSITE))
-                Text(pluralStringResource(R.plurals.dash_sessions, s.worksiteSessionsThisWeek, s.worksiteSessionsThisWeek))
-                if (s.worksiteDeadlines.isEmpty()) {
-                    Text(stringResource(R.string.dash_no_deadline), color = MaterialTheme.colorScheme.onSurfaceVariant)
-                }
-                s.worksiteDeadlines.forEach { d ->
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Text(
-                            stringResource(R.string.dash_deadline_line, d.task.title, d.task.dueDate?.year ?: 0),
-                            Modifier.weight(1f), style = MaterialTheme.typography.bodyMedium,
-                        )
-                        OverduePill(
-                            stringResource(
-                                if (d.level == DeadlineLevel.UNDER_3_MONTHS) R.string.deadline_under_3 else R.string.deadline_under_6,
-                            ),
-                        )
-                    }
-                }
+            Row(Modifier.height(IntrinsicSize.Max), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                val pm = s.projectsMonth
+                // Projets : jauge en temps (réalisé / objectif du mois, rattrapage inclus).
+                val projectRatio = if (pm.plannedMinutes <= 0) 0f else (pm.doneMinutes.toFloat() / pm.plannedMinutes).coerceIn(0f, 1f)
+                GaugeTile(
+                    label = label(TaskKind.PROJECT), period = stringResource(R.string.this_month), color = color(TaskKind.PROJECT),
+                    ratio = projectRatio, empty = pm.planned == 0,
+                    count = if (pm.planned == 0) stringResource(R.string.dash_no_project)
+                    else stringResource(R.string.progress_minutes, formatMinutes(pm.doneMinutes), formatMinutes(pm.plannedMinutes)),
+                    hours = null, modifier = Modifier.weight(1f).fillMaxHeight(),
+                )
+                val wy = s.worksitesYear
+                GaugeTile(
+                    label = label(TaskKind.WORKSITE), period = stringResource(R.string.year_title, s.today.year), color = color(TaskKind.WORKSITE),
+                    ratio = wy.ratio, empty = wy.planned == 0,
+                    count = stringResource(R.string.dash_points_count, wy.done, wy.planned),
+                    hours = if (wy.doneMinutes > 0) stringResource(R.string.dash_time_spent, formatMinutes(wy.doneMinutes)) else null,
+                    modifier = Modifier.weight(1f).fillMaxHeight(),
+                )
             }
         }
     }
 }
 
 @Composable
+private fun GaugeTile(
+    label: String,
+    period: String,
+    color: Color,
+    ratio: Float,
+    empty: Boolean,
+    count: String,
+    hours: String?,
+    modifier: Modifier = Modifier,
+) {
+    val ink = lerp(color, MaterialTheme.colorScheme.onSurface, 0.45f)
+    val percent = (ratio * 100).toInt()
+    val summary = buildString { append(label).append(", ").append(period).append(" : ").append(count); hours?.let { append(", ").append(it) } }
+    Column(
+        modifier.clip(RoundedCornerShape(22.dp)).background(color.copy(alpha = 0.10f)).padding(12.dp)
+            .semantics(mergeDescendants = true) { contentDescription = summary },
+        horizontalAlignment = Alignment.CenterHorizontally,
+    ) {
+        Text(
+            label, style = MaterialTheme.typography.labelLarge, color = ink, maxLines = 2,
+            overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis, textAlign = TextAlign.Center,
+        )
+        Text(period, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 1)
+        Box(Modifier.padding(vertical = 8.dp).size(84.dp), contentAlignment = Alignment.Center) {
+            val track = color.copy(alpha = 0.2f)
+            Canvas(Modifier.size(84.dp)) {
+                val stroke = 10.dp.toPx()
+                val inset = stroke / 2
+                val arcSize = Size(size.width - stroke, size.height - stroke)
+                drawArc(track, 0f, 360f, false, Offset(inset, inset), arcSize, style = Stroke(stroke))
+                if (!empty && ratio > 0f) {
+                    drawArc(color, -90f, 360f * ratio, false, Offset(inset, inset), arcSize, style = Stroke(stroke, cap = StrokeCap.Round))
+                }
+            }
+            Text(
+                if (empty) "—" else "$percent %",
+                style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.onSurface,
+            )
+        }
+        Text(count, style = MaterialTheme.typography.titleSmall, textAlign = TextAlign.Center, maxLines = 2)
+        if (hours != null) {
+            Text(
+                hours, style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant,
+                textAlign = TextAlign.Center, maxLines = 2,
+            )
+        }
+    }
+}
+
+// --- Travaux : sessions et échéances ---
+
+@Composable
+private fun WorksiteCard(s: DashboardState, type: TaskType?) {
+    Card(
+        Modifier.fillMaxWidth(), shape = RoundedCornerShape(24.dp),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow),
+    ) {
+        Column(Modifier.padding(18.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+            Text(type?.label.orEmpty(), style = MaterialTheme.typography.titleMedium, color = (type?.color ?: 0xFF607D8B).toColor())
+            Text(pluralStringResource(R.plurals.dash_sessions, s.worksiteSessionsThisWeek, s.worksiteSessionsThisWeek))
+            s.worksiteDeadlines.forEach { d ->
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(
+                        stringResource(R.string.dash_deadline_line, d.task.title, d.task.dueDate?.year ?: 0),
+                        Modifier.weight(1f), style = MaterialTheme.typography.bodyMedium,
+                    )
+                    OverduePill(
+                        stringResource(
+                            if (d.level == DeadlineLevel.UNDER_3_MONTHS) R.string.deadline_under_3 else R.string.deadline_under_6,
+                        ),
+                    )
+                }
+            }
+        }
+    }
+}
+
+// --- Statistiques ---
+
+@Composable
 private fun Stats(s: DashboardState) {
-    // Carte principale : indigo plein, texte blanc (contraste conservé en mode sombre via les couleurs fixes).
+    // Carte indigo pleine, texte blanc (contraste conservé en mode sombre via les couleurs fixes).
     Card(
         Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(28.dp),

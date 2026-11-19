@@ -57,9 +57,14 @@ class AppViewModel(private val container: AppContainer) : ViewModel() {
     val eventsByTask: StateFlow<Map<String, List<TaskEvent>>> =
         events.map { list -> list.groupBy { it.taskId } }.stateIn(viewModelScope, eager, emptyMap())
 
-    val dashboard: StateFlow<DashboardState?> = combine(tasks, events, types, today) { t, e, ty, d ->
+    // Quota de points d'effort de l'année en cours, pour la jauge « travaux » du tableau de bord.
+    private val currentYearQuota: StateFlow<Int> = combine(yearQuotas, settings, today) { q, s, d ->
+        QuotaLogic.quotaFor(d.year, q, s.defaultYearQuota)
+    }.stateIn(viewModelScope, eager, QuotaLogic.DEFAULT_QUOTA)
+
+    val dashboard: StateFlow<DashboardState?> = combine(tasks, events, types, today, currentYearQuota) { t, e, ty, d, quota ->
         val kinds = ty.associate { it.id to it.kind }
-        DashboardCalculator.compute(t, e, { kinds[it] }, d)
+        DashboardCalculator.compute(t, e, { kinds[it] }, d, quota)
     }.stateIn(viewModelScope, eager, null)
 
     fun kindOf(typeId: String): TaskKind? = types.value.firstOrNull { it.id == typeId }?.kind
