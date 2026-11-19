@@ -64,7 +64,14 @@ private enum class StatusFilter(val label: Int) {
 
 private enum class PeriodFilter(val label: Int) {
     ALL(R.string.period_all), OVERDUE(R.string.period_overdue), TODAY(R.string.period_today),
-    WEEK(R.string.period_week), MONTH(R.string.period_month)
+    WEEK(R.string.period_week), MONTH(R.string.period_month),
+    THIS_YEAR(R.string.period_this_year), FUTURE_YEARS(R.string.period_future_years)
+}
+
+/** Les travaux sont répartis par année : « Aujourd'hui / Cette semaine / Ce mois-ci » n'y ont pas de sens. */
+private fun periodOptions(kind: TaskKind): List<PeriodFilter> = when (kind) {
+    TaskKind.WORKSITE -> listOf(PeriodFilter.ALL, PeriodFilter.THIS_YEAR, PeriodFilter.FUTURE_YEARS, PeriodFilter.OVERDUE)
+    else -> listOf(PeriodFilter.ALL, PeriodFilter.OVERDUE, PeriodFilter.TODAY, PeriodFilter.WEEK, PeriodFilter.MONTH)
 }
 
 private enum class SortMode(val label: Int) {
@@ -153,6 +160,13 @@ fun TypeTabScreen(
         matching.filter { QuotaLogic.yearOf(it) == null && inStatus(it) && (status != StatusFilter.ACTIVE || it.status.isActive) }
             .sortedWith(comparator)
     }
+    val futureGroups = remember(matching, comparator, status) {
+        matching.filter { QuotaLogic.yearOf(it) != null && inStatus(it) }
+            .sortedWith(comparator)
+            .groupBy { QuotaLogic.yearOf(it)!! }
+            .toSortedMap()
+            .toList()
+    }
     val roomYears = remember(worksiteAll, quotas, settings, today) {
         if (!isWorksite) emptyList() else (today.year..today.year + 10).mapNotNull { y ->
             val q = QuotaLogic.quotaFor(y, quotas, settings.defaultYearQuota)
@@ -207,8 +221,9 @@ fun TypeTabScreen(
                 }
                 if (kind != TaskKind.PROJECT) item {
                     DropdownChip(
-                        label = stringResource(period.label), options = PeriodFilter.entries,
-                        optionText = { stringResource(it.label) }, onSelect = { period = it },
+                        label = stringResource(period.label), options = periodOptions(kind),
+                        optionText = { stringResource(it.label) },
+                        onSelect = { period = it; if (it == PeriodFilter.THIS_YEAR) year = today.year },
                         selected = period != PeriodFilter.ALL,
                     )
                 }
@@ -249,7 +264,16 @@ fun TypeTabScreen(
                 contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 8.dp, bottom = 96.dp),
                 verticalArrangement = Arrangement.spacedBy(8.dp),
             ) {
-                if (isWorksite) {
+                if (isWorksite && (period == PeriodFilter.FUTURE_YEARS || period == PeriodFilter.OVERDUE)) {
+                    // Années à venir / en retard : liste groupée par année, sans la vue de quota d'une année précise.
+                    if (futureGroups.isEmpty()) item(key = "groups-empty") { EmptyState(stringResource(R.string.empty_list)) }
+                    futureGroups.forEach { (y, list) ->
+                        item(key = "g-title-$y") { SectionTitle(stringResource(R.string.year_title, y), list.size) }
+                        items(list, key = { "g-" + it.id }) { task ->
+                            TaskRow(vm, task, kind, type, roomNames, today, eventsByTask, onOpenTask) { pending = vm.beginComplete(task) }
+                        }
+                    }
+                } else if (isWorksite) {
                     item(key = "year-card") {
                         YearQuotaCard(
                             summary = summary, accent = type.color.toColor(),
@@ -351,6 +375,8 @@ private fun matchesPeriod(t: Task, p: PeriodFilter, today: LocalDate): Boolean {
         PeriodFilter.TODAY -> due == today
         PeriodFilter.WEEK -> !due.isBefore(today) && !due.isAfter(today.weekEnd())
         PeriodFilter.MONTH -> due.year == today.year && due.month == today.month
+        PeriodFilter.THIS_YEAR -> due.year == today.year
+        PeriodFilter.FUTURE_YEARS -> due.year > today.year
     }
 }
 

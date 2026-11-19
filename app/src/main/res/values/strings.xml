@@ -96,6 +96,8 @@
     <string name="period_today">Aujourd\\x27hui</string>
     <string name="period_week">Cette semaine</string>
     <string name="period_month">Ce mois-ci</string>
+    <string name="period_this_year">Cette année</string>
+    <string name="period_future_years">Années à venir</string>
     <string name="sort_by">Tri : %1$s</string>
     <string name="sort_due">Échéance</string>
     <string name="sort_room">Pièce</string>
