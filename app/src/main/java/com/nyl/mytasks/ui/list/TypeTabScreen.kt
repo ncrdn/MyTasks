@@ -359,10 +359,13 @@ private fun TaskRow(
     onOpenTask: (String) -> Unit,
     onComplete: (() -> Unit)?,
 ) {
-    val project = if (kind == TaskKind.PROJECT) ProjectLogic.week(task, eventsByTask[task.id].orEmpty(), today) else null
+    val taskEvents = eventsByTask[task.id].orEmpty()
+    val project = if (kind == TaskKind.PROJECT) ProjectLogic.week(task, taskEvents, today) else null
+    val sessions = taskEvents.filter { it.kind == com.nyl.mytasks.domain.EventKind.SESSION }
     TaskCard(
         task = task, kind = kind, type = type, roomName = task.roomId?.let(roomNames::get), today = today,
         project = project, onClick = { onOpenTask(task.id) }, onComplete = onComplete,
+        sessions = sessions.size, sessionMinutes = sessions.sumOf { it.minutes ?: 0 },
     )
 }
 

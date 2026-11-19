@@ -168,7 +168,12 @@ fun TaskDetailScreen(
                                 stringResource(R.string.field_target_year),
                                 due?.let { stringResource(R.string.before_end_of, it.year) } ?: stringResource(R.string.year_not_attached),
                             )
-                            Field(stringResource(R.string.field_sessions), "${sessions.size}")
+                            // Nombre de sessions et total du temps consacré (somme des durées enregistrées).
+                            val spent = sessions.sumOf { it.minutes ?: 0 }
+                            Field(
+                                stringResource(R.string.field_sessions),
+                                if (spent > 0) "${sessions.size} · ${formatMinutes(spent)}" else "${sessions.size}",
+                            )
                         }
                         TaskKind.PROJECT -> task.weeklyGoalMinutes?.let {
                             Field(stringResource(R.string.field_weekly_goal), stringResource(R.string.per_week, formatMinutes(it)))

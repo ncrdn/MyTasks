@@ -71,6 +71,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
@@ -222,7 +223,7 @@ fun SectionTitle(text: String, count: Int? = null, modifier: Modifier = Modifier
 // --- Sous-titre descriptif d'une tâche ---
 
 @Composable
-fun taskSubtitle(task: Task, kind: TaskKind, roomName: String?): String {
+fun taskSubtitle(task: Task, kind: TaskKind, roomName: String?, sessions: Int = 0, sessionMinutes: Int = 0): String {
     val parts = ArrayList<String>()
     when (kind) {
         TaskKind.DOMESTIC -> {
@@ -239,6 +240,11 @@ fun taskSubtitle(task: Task, kind: TaskKind, roomName: String?): String {
             roomName?.let(parts::add)
             task.priority?.let { parts += stringResource(R.string.priority_short, it) }
             task.dueDate?.let { parts += stringResource(R.string.before_end_of, it.year) }
+            // Sessions de travail et total du temps consacré.
+            if (sessions > 0) {
+                parts += pluralStringResource(R.plurals.sessions_count, sessions, sessions) +
+                    if (sessionMinutes > 0) " · " + formatMinutes(sessionMinutes) else ""
+            }
         }
         TaskKind.PROJECT -> task.weeklyGoalMinutes?.let { parts += stringResource(R.string.per_week, formatMinutes(it)) }
     }
@@ -267,6 +273,8 @@ fun TaskCard(
     onComplete: (() -> Unit)?,
     daysLateOverride: Int? = null,
     showType: Boolean = false,
+    sessions: Int = 0,
+    sessionMinutes: Int = 0,
 ) {
     val context = androidx.compose.ui.platform.LocalContext.current
     val active = task.status.isActive
@@ -310,7 +318,7 @@ fun TaskCard(
                 if (showType && type != null) {
                     Text(type.label, style = MaterialTheme.typography.labelSmall, color = type.color.toColor())
                 }
-                val sub = taskSubtitle(task, kind, roomName)
+                val sub = taskSubtitle(task, kind, roomName, sessions, sessionMinutes)
                 if (sub.isNotBlank()) {
                     Text(
                         sub, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant,

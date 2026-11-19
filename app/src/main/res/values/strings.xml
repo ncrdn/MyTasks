@@ -221,6 +221,10 @@
         <item quantity="one">%d session enregistrée cette semaine</item>
         <item quantity="other">%d sessions enregistrées cette semaine</item>
     </plurals>
+    <plurals name="sessions_count">
+        <item quantity="one">%d session</item>
+        <item quantity="other">%d sessions</item>
+    </plurals>
     <plurals name="stat_streak">
         <item quantity="one">jour actif d\'affilée</item>
         <item quantity="other">jours actifs d\'affilée</item>
