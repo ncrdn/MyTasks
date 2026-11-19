@@ -170,15 +170,8 @@ private fun DashRow(
  */
 @Composable
 private fun ProgressBlock(s: DashboardState, types: List<TaskType>) {
-    fun typeOf(kind: TaskKind) = types.firstOrNull { it.kind == kind }
-    fun label(kind: TaskKind) = typeOf(kind)?.label.orEmpty()
-    fun color(kind: TaskKind) = (typeOf(kind)?.color ?: 0xFF607D8B).toColor()
-
-    @Composable
-    fun pairOf(p: Progress): String? =
-        if (p.plannedMinutes > 0) stringResource(R.string.progress_minutes, formatMinutes(p.doneMinutes), formatMinutes(p.plannedMinutes))
-        else if (p.doneMinutes > 0) stringResource(R.string.dash_time_spent, formatMinutes(p.doneMinutes))
-        else null
+    val context = androidx.compose.ui.platform.LocalContext.current
+    val tiles = remember(s, types) { ProgressTiles.build(context, s, types) }
 
     Card(
         Modifier.fillMaxWidth(),
@@ -188,68 +181,35 @@ private fun ProgressBlock(s: DashboardState, types: List<TaskType>) {
     ) {
         Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
             Text(stringResource(R.string.dash_progress), style = MaterialTheme.typography.titleLarge, modifier = Modifier.padding(start = 4.dp))
-            Row(Modifier.height(IntrinsicSize.Max), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                GaugeTile(
-                    label = label(TaskKind.DOMESTIC), period = stringResource(R.string.this_week), color = color(TaskKind.DOMESTIC),
-                    ratio = s.recurring.ratio, empty = s.recurring.planned == 0,
-                    count = stringResource(R.string.dash_count, s.recurring.done, s.recurring.planned),
-                    hours = pairOf(s.recurring), modifier = Modifier.weight(1f).fillMaxHeight(),
-                )
-                GaugeTile(
-                    label = label(TaskKind.ONE_OFF), period = stringResource(R.string.this_week), color = color(TaskKind.ONE_OFF),
-                    ratio = s.oneOff.ratio, empty = s.oneOff.planned == 0,
-                    count = stringResource(R.string.dash_count, s.oneOff.done, s.oneOff.planned),
-                    hours = pairOf(s.oneOff), modifier = Modifier.weight(1f).fillMaxHeight(),
-                )
-            }
-            Row(Modifier.height(IntrinsicSize.Max), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                val pm = s.projectsMonth
-                // Projets : jauge en temps (réalisé / objectif du mois, rattrapage inclus).
-                val projectRatio = if (pm.plannedMinutes <= 0) 0f else (pm.doneMinutes.toFloat() / pm.plannedMinutes).coerceIn(0f, 1f)
-                GaugeTile(
-                    label = label(TaskKind.PROJECT), period = stringResource(R.string.this_month), color = color(TaskKind.PROJECT),
-                    ratio = projectRatio, empty = pm.planned == 0,
-                    count = if (pm.planned == 0) stringResource(R.string.dash_no_project)
-                    else stringResource(R.string.progress_minutes, formatMinutes(pm.doneMinutes), formatMinutes(pm.plannedMinutes)),
-                    hours = null, modifier = Modifier.weight(1f).fillMaxHeight(),
-                )
-                val wy = s.worksitesYear
-                GaugeTile(
-                    label = label(TaskKind.WORKSITE), period = stringResource(R.string.year_title, s.today.year), color = color(TaskKind.WORKSITE),
-                    ratio = wy.ratio, empty = wy.planned == 0,
-                    count = stringResource(R.string.dash_points_count, wy.done, wy.planned),
-                    hours = if (wy.doneMinutes > 0) stringResource(R.string.dash_time_spent, formatMinutes(wy.doneMinutes)) else null,
-                    modifier = Modifier.weight(1f).fillMaxHeight(),
-                )
+            tiles.chunked(2).forEach { pair ->
+                Row(Modifier.height(IntrinsicSize.Max), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                    pair.forEach { tile -> GaugeTile(tile, Modifier.weight(1f).fillMaxHeight()) }
+                }
             }
         }
     }
 }
 
 @Composable
-private fun GaugeTile(
-    label: String,
-    period: String,
-    color: Color,
-    ratio: Float,
-    empty: Boolean,
-    count: String,
-    hours: String?,
-    modifier: Modifier = Modifier,
-) {
+private fun GaugeTile(tile: ProgressTile, modifier: Modifier = Modifier) {
+    val color = tile.color
     val ink = lerp(color, MaterialTheme.colorScheme.onSurface, 0.45f)
+    val ratio = tile.ratio
     val percent = (ratio * 100).toInt()
-    val summary = buildString { append(label).append(", ").append(period).append(" : ").append(count); hours?.let { append(", ").append(it) } }
+    val summary = buildString {
+        append(tile.label).append(", ").append(tile.period).append(" : ").append(tile.count)
+        tile.hours?.let { append(", ").append(it) }
+    }
     Column(
         modifier.clip(RoundedCornerShape(22.dp)).background(color.copy(alpha = 0.10f)).padding(12.dp)
             .semantics(mergeDescendants = true) { contentDescription = summary },
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         Text(
-            label, style = MaterialTheme.typography.labelLarge, color = ink, maxLines = 2,
+            tile.label, style = MaterialTheme.typography.labelLarge, color = ink, maxLines = 2,
             overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis, textAlign = TextAlign.Center,
         )
-        Text(period, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 1)
+        Text(tile.period, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 1)
         Box(Modifier.padding(vertical = 8.dp).size(84.dp), contentAlignment = Alignment.Center) {
             val track = color.copy(alpha = 0.2f)
             Canvas(Modifier.size(84.dp)) {
@@ -257,19 +217,19 @@ private fun GaugeTile(
                 val inset = stroke / 2
                 val arcSize = Size(size.width - stroke, size.height - stroke)
                 drawArc(track, 0f, 360f, false, Offset(inset, inset), arcSize, style = Stroke(stroke))
-                if (!empty && ratio > 0f) {
+                if (!tile.empty && ratio > 0f) {
                     drawArc(color, -90f, 360f * ratio, false, Offset(inset, inset), arcSize, style = Stroke(stroke, cap = StrokeCap.Round))
                 }
             }
             Text(
-                if (empty) "—" else "$percent %",
+                if (tile.empty) "—" else "$percent %",
                 style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.onSurface,
             )
         }
-        Text(count, style = MaterialTheme.typography.titleSmall, textAlign = TextAlign.Center, maxLines = 2)
-        if (hours != null) {
+        Text(tile.count, style = MaterialTheme.typography.titleSmall, textAlign = TextAlign.Center, maxLines = 2)
+        if (tile.hours != null) {
             Text(
-                hours, style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant,
+                tile.hours, style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant,
                 textAlign = TextAlign.Center, maxLines = 2,
             )
         }
