@@ -178,14 +178,18 @@ fun TypeTabScreen(
     val attachedList = remember(matching, comparator, year, status) {
         matching.filter { QuotaLogic.yearOf(it) == year && inStatus(it) }.sortedWith(comparator)
     }
+    // Sous « Rattachées à 2026 » : d'abord ce qui reste à réaliser, ensuite ce qui est réalisé (barré), puis l'éventuel abandonné.
+    val attachedTodo = remember(attachedList) { attachedList.filter { it.status.isActive } }
+    val attachedDone = remember(attachedList) { attachedList.filter { it.status == TaskStatus.DONE } }
+    val attachedAbandoned = remember(attachedList) { attachedList.filter { it.status == TaskStatus.ABANDONED } }
     val pendingList = remember(matching, comparator, status) {
         matching.filter { QuotaLogic.yearOf(it) == null && inStatus(it) && (status != StatusFilter.ACTIVE || it.status.isActive) }
             .sortedWith(comparator)
     }
     val futureGroups = remember(matching, comparator, status) {
-        matching.filter { QuotaLogic.yearOf(it) != null && inStatus(it) }
+        matching.filter { inStatus(it) }
             .sortedWith(comparator)
-            .groupBy { QuotaLogic.yearOf(it)!! }
+            .groupBy { QuotaLogic.yearOf(it) ?: PENDING_GROUP }
             .toSortedMap()
             .toList()
     }
@@ -286,11 +290,19 @@ fun TypeTabScreen(
                 contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 8.dp, bottom = 96.dp),
                 verticalArrangement = Arrangement.spacedBy(8.dp),
             ) {
-                if (isWorksite && (period == PeriodFilter.FUTURE_YEARS || period == PeriodFilter.OVERDUE)) {
-                    // Années à venir / en retard : liste groupée par année, sans la vue de quota d'une année précise.
+                if (isWorksite && (period == PeriodFilter.FUTURE_YEARS || period == PeriodFilter.OVERDUE ||
+                        status == StatusFilter.DONE || status == StatusFilter.ABANDONED)
+                ) {
+                    // Années à venir / en retard, et filtres « Faites » / « Abandonnées » : liste groupée par année (toutes les
+                    // années, pas seulement celle affichée), sans la vue de quota d'une année précise.
                     if (futureGroups.isEmpty()) item(key = "groups-empty") { EmptyState(stringResource(R.string.empty_list)) }
                     futureGroups.forEach { (y, list) ->
-                        item(key = "g-title-$y") { SectionTitle(stringResource(R.string.year_title, y), list.size) }
+                        item(key = "g-title-$y") {
+                            SectionTitle(
+                                if (y == PENDING_GROUP) stringResource(R.string.year_pending) else stringResource(R.string.year_title, y),
+                                list.size,
+                            )
+                        }
                         items(list, key = { "g-" + it.id }) { task ->
                             TaskRow(vm, task, kind, type, roomNames, today, eventsByTask, onOpenTask) { pending = vm.beginComplete(task) }
                         }
@@ -304,8 +316,23 @@ fun TypeTabScreen(
                     }
                     item(key = "year-title") { SectionTitle(stringResource(R.string.year_attached, year), attachedList.size) }
                     if (attachedList.isEmpty()) item(key = "year-empty") { EmptyState(stringResource(R.string.year_attached_empty)) }
-                    items(attachedList, key = { "y-" + it.id }) { task ->
-                        TaskRow(vm, task, kind, type, roomNames, today, eventsByTask, onOpenTask) { pending = vm.beginComplete(task) }
+                    if (attachedTodo.isNotEmpty()) {
+                        item(key = "sub-todo") { SubSectionTitle(stringResource(R.string.year_todo), attachedTodo.size) }
+                        items(attachedTodo, key = { "y-" + it.id }) { task ->
+                            TaskRow(vm, task, kind, type, roomNames, today, eventsByTask, onOpenTask) { pending = vm.beginComplete(task) }
+                        }
+                    }
+                    if (attachedDone.isNotEmpty()) {
+                        item(key = "sub-done") { SubSectionTitle(stringResource(R.string.year_done_title), attachedDone.size) }
+                        items(attachedDone, key = { "y-" + it.id }) { task ->
+                            TaskRow(vm, task, kind, type, roomNames, today, eventsByTask, onOpenTask, onComplete = null)
+                        }
+                    }
+                    if (attachedAbandoned.isNotEmpty()) {
+                        item(key = "sub-abandoned") { SubSectionTitle(stringResource(R.string.year_abandoned_title), attachedAbandoned.size) }
+                        items(attachedAbandoned, key = { "y-" + it.id }) { task ->
+                            TaskRow(vm, task, kind, type, roomNames, today, eventsByTask, onOpenTask, onComplete = null)
+                        }
                     }
                     item(key = "pending-title") { SectionTitle(stringResource(R.string.year_pending), pendingList.size) }
                     item(key = "pending-help") {
@@ -373,6 +400,20 @@ fun TypeTabScreen(
 @Composable
 private fun Column2(padding: PaddingValues, content: @Composable () -> Unit) {
     androidx.compose.foundation.layout.Column(Modifier.padding(padding).fillMaxSize()) { content() }
+}
+
+/** Clé du groupe « en attente » (tâches sans année) dans les listes groupées par année : après toutes les années. */
+private const val PENDING_GROUP = Int.MAX_VALUE
+
+/** Intitulé d'une sous-partie (à réaliser / réalisées) sous une section. */
+@Composable
+private fun SubSectionTitle(text: String, count: Int) {
+    Text(
+        "$text · $count",
+        style = MaterialTheme.typography.titleSmall,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+        modifier = Modifier.padding(start = 4.dp, top = 6.dp),
+    )
 }
 
 /** Une occurrence réalisée d'une tâche récurrente : carte « faite » avec sa date de complétion. */
