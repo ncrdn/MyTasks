@@ -193,7 +193,7 @@ class ProjectAndDashboardTest {
         assertEquals(DeadlineLevel.UNDER_3_MONTHS, levels["w2"])
         assertEquals(DeadlineLevel.UNDER_6_MONTHS, levels["w3"])
         assertNull(levels["w1"])
-        assertTrue(s.weekItems.any { it.task.id == "w1" }) // priorité 4 => « chantier prioritaire »
+        assertTrue(s.weekItems.none { it.kind == TaskKind.WORKSITE }) // jamais de tuile travaux : seulement le récapitulatif
     }
 
     // --- Jauges sur le temps (reco 12) ---
@@ -229,19 +229,24 @@ class ProjectAndDashboardTest {
         assertEquals(10f / 60f, s.oneOff.timeRatio, 0.0001f)
     }
 
-    // --- Projets et travaux hors de « À faire aujourd'hui » (reco 13) ---
+    // --- Projets du mois, pas de tuiles travaux (reco 13, version client) ---
 
-    @Test fun projectsAndWorksites_areListedUnderThisWeek_notToday() {
+    @Test fun projects_haveTheirOwnList_notTodayNorThisWeek() {
         val s = dash(listOf(trash, spanish, salon), emptyList(), "2026-11-17")
-        assertEquals(listOf("t1"), s.todayItems.map { it.task.id }) // seule la tâche récurrente à échéance du jour
-        // En bas de page, dans « À faire cette semaine » : projets puis travaux.
-        assertEquals(listOf("p1", "w1"), s.weekItems.map { it.task.id })
-        assertTrue(s.todayItems.none { it.kind == TaskKind.PROJECT || it.kind == TaskKind.WORKSITE })
+        assertEquals(listOf("t1"), s.todayItems.map { it.task.id })
+        assertTrue(s.weekItems.isEmpty())
+        assertEquals(listOf("p1"), s.projects.map { it.task.id })
+        assertNotNull(s.projects.single().project) // avancement du mois fourni pour la tuile
     }
 
-    @Test fun thisWeek_ordersRecurringAndOneOffByDueDate_thenProjects_thenWorksites() {
-        val s = dash(listOf(salon, spanish, parcel, trash.copy(id = "t4", dueDate = d("2026-11-18"))), emptyList(), "2026-11-17")
-        assertEquals(listOf("t4", "t2", "p1", "w1"), s.weekItems.map { it.task.id })
+    @Test fun worksites_neverHaveTilesOnTheDashboard_onlyTheRecap() {
+        val late = salon.copy(id = "w9", dueDate = d("2026-11-01"))
+        val soon = salon.copy(id = "w2", dueDate = d("2027-01-31"))
+        val s = dash(listOf(salon, late, soon), emptyList(), "2026-11-17")
+        val all = s.todayItems + s.overdueItems + s.weekItems + s.projects
+        assertTrue(all.none { it.kind == TaskKind.WORKSITE })
+        assertEquals(0, s.overdueCount)
+        assertEquals(listOf("w2"), s.worksiteDeadlines.map { it.task.id }) // le récapitulatif est conservé
     }
 
     @Test fun backup_roundTripIsLossless() {

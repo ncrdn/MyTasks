@@ -241,6 +241,7 @@
     <string name="widget_description">Jauges d\'avancement : semaine, mois et année.</string>
     <string name="this_week">Cette semaine</string>
     <string name="dash_later_this_week">À faire cette semaine</string>
+    <string name="dash_projects_month">Projets du mois</string>
     <string name="dash_week_empty">Rien d\'autre de prévu cette semaine.</string>
     <string name="dash_count">%1$d / %2$d</string>
     <string name="dash_points_count">%1$d / %2$d pts</string>

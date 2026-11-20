@@ -47,6 +47,7 @@ data class DashboardState(
     val projectsMonth: Progress,
     /** Travaux : points réalisés / points engagés sur l'année ; minutes = temps de sessions sur l'année. */
     val worksitesYear: Progress,
+    /** Projets actifs, avec leur avancement du mois : rubrique « Projets du mois ». */
     val projects: List<DashItem>,
     val worksiteSessionsThisWeek: Int,
     val worksiteDeadlines: List<WorksiteDeadline>,
@@ -101,26 +102,29 @@ object DashboardCalculator {
                         val since = month.lateSince
                         overdue += item.copy(daysLate = if (since == null) 1 else ChronoUnit.DAYS.between(since, today).toInt().coerceAtLeast(1))
                     }
-                    if (month.remaining > 0) weekItems += item
+                }
+                TaskKind.WORKSITE -> {
+                    // Tâches de long terme : aucune tuile sur le tableau de bord, seulement le récapitulatif
+                    // (sessions de la semaine et échéances annuelles qui approchent).
+                    if (task.paused) continue
+                    val due = task.dueDate
+                    if (due != null && !due.isBefore(today)) {
+                        val left = ChronoUnit.DAYS.between(today, due).toInt()
+                        when {
+                            left <= 92 -> deadlines += WorksiteDeadline(task, DeadlineLevel.UNDER_3_MONTHS, left)
+                            left <= 183 -> deadlines += WorksiteDeadline(task, DeadlineLevel.UNDER_6_MONTHS, left)
+                        }
+                    }
                 }
                 else -> {
                     if (task.paused) continue
                     val due = task.dueDate
                     if (TaskLogic.isOverdue(task, kind, today)) {
                         overdue += DashItem(task, kind, daysLate = TaskLogic.daysLate(task, today))
-                    } else if (kind == TaskKind.WORKSITE) {
-                        if ((task.priority ?: 0) >= 4) weekItems += DashItem(task, kind)
                     } else if (due == today) {
                         todayItems += DashItem(task, kind)
                     } else if (due != null && due.isAfter(today) && !due.isAfter(weekEnd)) {
                         weekItems += DashItem(task, kind)
-                    }
-                    if (kind == TaskKind.WORKSITE && due != null && !due.isBefore(today)) {
-                        val left = ChronoUnit.DAYS.between(today, due).toInt()
-                        when {
-                            left <= 92 -> deadlines += WorksiteDeadline(task, DeadlineLevel.UNDER_3_MONTHS, left)
-                            left <= 183 -> deadlines += WorksiteDeadline(task, DeadlineLevel.UNDER_6_MONTHS, left)
-                        }
                     }
                 }
             }
@@ -147,10 +151,7 @@ object DashboardCalculator {
             today = today,
             todayItems = todayItems.sortedWith(compareBy({ it.kind.ordinal }, { it.task.title.lowercase() })),
             overdueItems = overdue.sortedByDescending { it.daysLate },
-            // Récurrentes et ponctuelles par échéance, puis les projets, puis les travaux (sans date du jour).
-            weekItems = weekItems.sortedWith(
-                compareBy<DashItem>({ weekRank(it.kind) }, { it.task.dueDate?.toEpochDay() ?: Long.MAX_VALUE }, { it.task.title.lowercase() }),
-            ),
+            weekItems = weekItems.sortedWith(compareBy({ it.task.dueDate }, { it.task.title.lowercase() })),
             recurring = recurring,
             oneOff = oneOff,
             projectsMonth = projectsMonth,
@@ -160,12 +161,6 @@ object DashboardCalculator {
             worksiteSessionsThisWeek = sessionsThisWeek,
             worksiteDeadlines = deadlines.sortedBy { it.daysLeft },
         )
-    }
-
-    private fun weekRank(kind: TaskKind) = when (kind) {
-        TaskKind.DOMESTIC, TaskKind.ONE_OFF -> 0
-        TaskKind.PROJECT -> 1
-        TaskKind.WORKSITE -> 2
     }
 
     private operator fun Progress.plus(o: Progress) =

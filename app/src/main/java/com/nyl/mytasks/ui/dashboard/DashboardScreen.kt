@@ -121,14 +121,22 @@ fun DashboardScreen(
                 DashRow(item, typeById, roomNames, s, onOpenTask) { pending = vm.beginComplete(item.task) }
             }
 
-            // --- À faire cette semaine : récurrentes et ponctuelles, puis projets et travaux (sans date du jour) ---
+            // --- À faire cette semaine : récurrentes et ponctuelles ---
             item(key = "week-title") { SectionTitle(stringResource(R.string.dash_later_this_week), s.weekItems.size) }
             if (s.weekItems.isEmpty()) item(key = "week-empty") { EmptyState(stringResource(R.string.dash_week_empty)) }
             items(s.weekItems, key = { "week-" + it.task.id }) { item ->
                 DashRow(item, typeById, roomNames, s, onOpenTask) { pending = vm.beginComplete(item.task) }
             }
 
-            // --- Travaux : sessions de la semaine, échéances annuelles qui approchent ---
+            // --- Projets du mois : une tuile par projet actif, avec son avancement du mois ---
+            if (s.projects.isNotEmpty()) {
+                item(key = "projects-title") { SectionTitle(stringResource(R.string.dash_projects_month), s.projects.size) }
+                items(s.projects, key = { "project-" + it.task.id }) { item ->
+                    DashRow(item, typeById, roomNames, s, onOpenTask) { pending = vm.beginComplete(item.task) }
+                }
+            }
+
+            // --- Travaux : récapitulatif seul (sessions de la semaine, échéances annuelles qui approchent) ---
             if (s.worksiteSessionsThisWeek > 0 || s.worksiteDeadlines.isNotEmpty()) {
                 item(key = "worksites") { WorksiteCard(s, types.firstOrNull { it.kind == TaskKind.WORKSITE }) }
             }
