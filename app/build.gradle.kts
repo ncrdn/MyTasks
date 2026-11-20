@@ -16,8 +16,8 @@ android {
         applicationId = "com.nyl.mytasks"
         minSdk = 26
         targetSdk = 35
-        versionCode = 4
-        versionName = "1.1.2"
+        versionCode = 5
+        versionName = "1.1.3"
     }
 
     // Signature de release : lue dans keystore.properties (non versionné). Absent → release non signée.
