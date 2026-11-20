@@ -45,7 +45,7 @@ data class DashboardState(
     val oneOff: Progress,
     /** Projets : temps du mois en cours (minutes réalisées / objectif du mois, rattrapage inclus). */
     val projectsMonth: Progress,
-    /** Travaux : points d'effort consommés / quota de l'année ; minutes = temps de sessions sur l'année. */
+    /** Travaux : points réalisés / points engagés sur l'année ; minutes = temps de sessions sur l'année. */
     val worksitesYear: Progress,
     val projects: List<DashItem>,
     val worksiteSessionsThisWeek: Int,
@@ -154,7 +154,8 @@ object DashboardCalculator {
             recurring = recurring,
             oneOff = oneOff,
             projectsMonth = projectsMonth,
-            worksitesYear = Progress(yearSummary.committed, yearQuota, worksiteYearMinutes, 0),
+            // Jauge des travaux : points réalisés (tâches terminées) rapportés aux points engagés sur l'année.
+            worksitesYear = Progress(yearSummary.done, yearSummary.committed, worksiteYearMinutes, 0),
             projects = projects.sortedBy { it.task.title.lowercase() },
             worksiteSessionsThisWeek = sessionsThisWeek,
             worksiteDeadlines = deadlines.sortedBy { it.daysLeft },

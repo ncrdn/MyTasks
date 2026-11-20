@@ -71,7 +71,11 @@
     <string name="year_edit_quota">Modifier le quota</string>
     <string name="year_quota">Quota</string>
     <string name="year_committed">Engagés</string>
+    <string name="year_done">Réalisés</string>
     <string name="year_remaining">Restants</string>
+    <string name="year_todo">À réaliser</string>
+    <string name="year_done_title">Réalisées</string>
+    <string name="year_abandoned_title">Abandonnées</string>
     <string name="year_over_quota">Quota dépassé : des points ont été engagés avant sa baisse.</string>
     <string name="year_quota_dialog_title">Quota %1$d</string>
     <string name="year_quota_as_default">Proposer cette valeur pour les autres années</string>

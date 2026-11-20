@@ -1,6 +1,10 @@
 package com.nyl.mytasks.ui.list
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.ui.draw.clip
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -74,16 +78,19 @@ fun YearQuotaCard(
                         stringResource(R.string.year_committed), "${summary.committed}", Modifier.weight(1f),
                         valueColor = if (summary.isOver) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurface,
                     )
-                    Figure(stringResource(R.string.year_remaining), "${summary.remaining}", Modifier.weight(1f), valueColor = accent)
+                    // Points réalisés : somme des points des tâches terminées (source de la jauge de l'accueil).
+                    Figure(stringResource(R.string.year_done), "${summary.done}", Modifier.weight(1f), valueColor = accent)
+                    Figure(stringResource(R.string.year_remaining), "${summary.remaining}", Modifier.weight(1f))
                 }
-                LinearProgressIndicator(
-                    progress = { summary.progress },
-                    modifier = Modifier.fillMaxWidth().height(10.dp),
-                    color = if (summary.isOver) MaterialTheme.colorScheme.error else accent,
-                    trackColor = accent.copy(alpha = 0.16f),
-                    gapSize = 0.dp,
-                    drawStopIndicator = {},
-                )
+                // Barre à deux niveaux : engagés (teinte claire) et, par-dessus, réalisés (couleur pleine).
+                val barColor = if (summary.isOver) MaterialTheme.colorScheme.error else accent
+                val doneFraction = if (summary.quota <= 0) 0f else (summary.done.toFloat() / summary.quota).coerceIn(0f, 1f)
+                Box(
+                    Modifier.fillMaxWidth().height(10.dp).clip(RoundedCornerShape(50)).background(accent.copy(alpha = 0.16f)),
+                ) {
+                    Box(Modifier.fillMaxWidth(summary.progress).fillMaxHeight().background(barColor.copy(alpha = 0.45f)))
+                    Box(Modifier.fillMaxWidth(doneFraction).fillMaxHeight().background(barColor))
+                }
                 if (summary.isOver) {
                     Text(
                         stringResource(R.string.year_over_quota), style = MaterialTheme.typography.labelMedium,

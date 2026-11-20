@@ -149,9 +149,13 @@ class ProjectAndDashboardTest {
         val other = salon.copy(id = "wc", dueDate = d("2027-12-31"), effort = 9)
         val ev = TaskEvent("s1", "wa", EventKind.SESSION, d("2026-11-10"), minutes = 90)
         val s = DashboardCalculator.compute(listOf(a, b, other), listOf(ev), { kinds[it] }, d("2026-11-17"), yearQuota = 45)
-        assertEquals(9, s.worksitesYear.done)   // points engagés sur 2026 (la tâche terminée reste consommée)
-        assertEquals(45, s.worksitesYear.planned)
+        // Jauge de l'accueil : points réalisés (tâche terminée : 5) rapportés aux points engagés sur 2026 (4 + 5 = 9).
+        assertEquals(5, s.worksitesYear.done)
+        assertEquals(9, s.worksitesYear.planned)
+        assertEquals(5f / 9f, s.worksitesYear.ratio, 0.0001f)
         assertEquals(90, s.worksitesYear.doneMinutes)
+        // Et l'encart d'année affiche les mêmes points réalisés.
+        assertEquals(5, QuotaLogic.summary(2026, 45, listOf(a, b, other)).done)
     }
 
     @Test fun dashboard_projectsMonthGauge_sumsMinutesOverGoal() {
