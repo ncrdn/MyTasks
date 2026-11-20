@@ -4,25 +4,15 @@
     android:height="108dp"
     android:viewportWidth="108"
     android:viewportHeight="108">
-    <!-- Anneau d'avancement : piste claire, arc ambre aux trois quarts, coche blanche au centre -->
+    <!-- Carte blanche arrondie avec une coche indigo (le fond indigo est ic_launcher_background) -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M34,32h40a6,6 0 0 1 6,6v32a6,6 0 0 1 -6,6h-40a6,6 0 0 1 -6,-6v-32a6,6 0 0 1 6,-6z" />
     <path
         android:fillColor="#00000000"
-        android:strokeColor="#FFFFFF"
-        android:strokeAlpha="0.28"
-        android:strokeWidth="10"
-        android:pathData="M54,27a27,27 0 1,1 0,54a27,27 0 1,1 0,-54" />
-    <path
-        android:fillColor="#00000000"
-        android:strokeColor="#FBBF24"
-        android:strokeWidth="10"
-        android:strokeLineCap="round"
-        android:trimPathEnd="0.72"
-        android:pathData="M54,27a27,27 0 1,1 0,54a27,27 0 1,1 0,-54" />
-    <path
-        android:fillColor="#00000000"
-        android:strokeColor="#FFFFFF"
-        android:strokeWidth="6"
+        android:strokeColor="#4338CA"
+        android:strokeWidth="5"
         android:strokeLineCap="round"
         android:strokeLineJoin="round"
-        android:pathData="M44,55L51,62L64,47" />
+        android:pathData="M42,54l8,8l16,-16" />
 </vector>
