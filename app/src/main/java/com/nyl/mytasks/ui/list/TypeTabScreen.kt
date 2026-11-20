@@ -38,7 +38,9 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.nyl.mytasks.R
+import com.nyl.mytasks.domain.EventKind
 import com.nyl.mytasks.domain.ProjectLogic
+import com.nyl.mytasks.domain.TaskEvent
 import com.nyl.mytasks.domain.QuotaLogic
 import com.nyl.mytasks.ui.common.SectionTitle
 import com.nyl.mytasks.ui.common.toColor
@@ -46,6 +48,7 @@ import com.nyl.mytasks.domain.Task
 import com.nyl.mytasks.domain.TaskKind
 import com.nyl.mytasks.domain.TaskStatus
 import com.nyl.mytasks.domain.weekEnd
+import com.nyl.mytasks.domain.weekStart
 import com.nyl.mytasks.ui.AppViewModel
 import com.nyl.mytasks.ui.common.CompletionDialogs
 import com.nyl.mytasks.ui.common.DropdownChip
@@ -136,6 +139,25 @@ fun TypeTabScreen(
         StatusFilter.DONE -> inactive.filter { it.status == TaskStatus.DONE } to emptyList()
         StatusFilter.ABANDONED -> inactive.filter { it.status == TaskStatus.ABANDONED } to emptyList()
     }
+
+    // Occurrences faites des tâches récurrentes : une entrée par complétion, avec sa date. Elles apparaissent dans le
+    // filtre « Faites » (et « Toutes »), et dans la section repliable de l'historique du filtre « À faire ».
+    val occurrences = remember(allTasks, eventsByTask, typeId, query, roomFilter, period, today) {
+        if (kind != TaskKind.DOMESTIC) emptyList() else allTasks
+            .filter { t ->
+                t.typeId == typeId && t.recurrence != null &&
+                    (query.isBlank() || t.title.contains(query.trim(), ignoreCase = true)) &&
+                    (roomFilter == null || t.roomId == roomFilter)
+            }
+            .flatMap { t ->
+                eventsByTask[t.id].orEmpty()
+                    .filter { it.kind == EventKind.DONE && matchesPeriodDate(it.date, period, today) }
+                    .map { e -> t to e }
+            }
+            .sortedWith(compareByDescending<Pair<Task, TaskEvent>> { it.second.date }.thenByDescending { it.second.timestamp })
+    }
+    val occurrencesMain = if (status == StatusFilter.ALL || status == StatusFilter.DONE) occurrences else emptyList()
+    val occurrencesHistory = if (status == StatusFilter.ACTIVE) occurrences else emptyList()
 
     // --- Travaux : vue par année avec quota de points d'effort ---
     val quotas by vm.yearQuotas.collectAsStateWithLifecycle()
@@ -256,7 +278,7 @@ fun TypeTabScreen(
                 }
             }
 
-            if (!isWorksite && mainList.isEmpty() && historyList.isEmpty()) {
+            if (!isWorksite && mainList.isEmpty() && historyList.isEmpty() && occurrencesMain.isEmpty() && occurrencesHistory.isEmpty()) {
                 EmptyState(stringResource(R.string.empty_list))
             }
             LazyColumn(
@@ -303,14 +325,17 @@ fun TypeTabScreen(
                 items(if (isWorksite) emptyList() else mainList, key = { it.id }) { task ->
                     TaskRow(vm, task, kind, type, roomNames, today, eventsByTask, onOpenTask) { pending = vm.beginComplete(task) }
                 }
-                if (!isWorksite && historyList.isNotEmpty()) {
+                items(occurrencesMain, key = { "o-" + it.second.id }) { (task, event) ->
+                    OccurrenceRow(task, event, type, roomNames, today, onOpenTask)
+                }
+                if (!isWorksite && (historyList.isNotEmpty() || occurrencesHistory.isNotEmpty())) {
                     item(key = "history-header") {
                         Row(
                             Modifier.fillMaxWidth().clickable { showHistory = !showHistory }.padding(vertical = 12.dp),
                             verticalAlignment = Alignment.CenterVertically,
                         ) {
                             Text(
-                                stringResource(R.string.history_collapsible, historyList.size),
+                                stringResource(R.string.history_collapsible, historyList.size + occurrencesHistory.size),
                                 style = MaterialTheme.typography.titleSmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 modifier = Modifier.weight(1f),
@@ -321,6 +346,9 @@ fun TypeTabScreen(
                     if (showHistory) {
                         items(historyList, key = { "h-" + it.id }) { task ->
                             TaskRow(vm, task, kind, type, roomNames, today, eventsByTask, onOpenTask, onComplete = null)
+                        }
+                        items(occurrencesHistory, key = { "ho-" + it.second.id }) { (task, event) ->
+                            OccurrenceRow(task, event, type, roomNames, today, onOpenTask)
                         }
                     }
                 }
@@ -347,6 +375,22 @@ private fun Column2(padding: PaddingValues, content: @Composable () -> Unit) {
     androidx.compose.foundation.layout.Column(Modifier.padding(padding).fillMaxSize()) { content() }
 }
 
+/** Une occurrence réalisée d'une tâche récurrente : carte « faite » avec sa date de complétion. */
+@Composable
+private fun OccurrenceRow(
+    task: Task,
+    event: TaskEvent,
+    type: com.nyl.mytasks.domain.TaskType,
+    roomNames: Map<String, String>,
+    today: LocalDate,
+    onOpenTask: (String) -> Unit,
+) {
+    TaskCard(
+        task = task, kind = TaskKind.DOMESTIC, type = type, roomName = task.roomId?.let(roomNames::get), today = today,
+        project = null, onClick = { onOpenTask(task.id) }, onComplete = null, doneOn = event.date,
+    )
+}
+
 @Composable
 private fun TaskRow(
     vm: AppViewModel,
@@ -368,6 +412,15 @@ private fun TaskRow(
         sessions = sessions.size, sessionMinutes = sessions.sumOf { it.minutes ?: 0 },
         history = if (kind == TaskKind.PROJECT) ProjectLogic.history(taskEvents, today) else emptyList(),
     )
+}
+
+/** Période appliquée à une date de complétion (« Faites ») : la période concernée, pas l'échéance à venir. */
+private fun matchesPeriodDate(date: LocalDate, p: PeriodFilter, today: LocalDate): Boolean = when (p) {
+    PeriodFilter.OVERDUE -> false
+    PeriodFilter.TODAY -> date == today
+    PeriodFilter.WEEK -> date in today.weekStart()..today.weekEnd()
+    PeriodFilter.MONTH -> date.year == today.year && date.month == today.month
+    else -> true
 }
 
 private fun matchesPeriod(t: Task, p: PeriodFilter, today: LocalDate): Boolean {

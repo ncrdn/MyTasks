@@ -279,9 +279,11 @@ fun TaskCard(
     sessions: Int = 0,
     sessionMinutes: Int = 0,
     history: List<MonthTotal> = emptyList(),
+    /** Occurrence réalisée d'une tâche récurrente : carte « faite » (barrée) avec sa date de complétion. */
+    doneOn: LocalDate? = null,
 ) {
     val context = androidx.compose.ui.platform.LocalContext.current
-    val active = task.status.isActive
+    val active = task.status.isActive && doneOn == null
     val due = task.dueDate
     val late = when {
         kind == TaskKind.PROJECT -> project?.isLate == true
@@ -351,7 +353,10 @@ fun TaskCard(
                     }
                 }
                 if (!active) {
-                    Text(statusLabel(task.status), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Text(
+                        if (doneOn != null) stringResource(R.string.occurrence_done_on, doneOn.formatLong()) else statusLabel(task.status),
+                        style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
                 }
                 // Échéance / retard sous le texte (et non à côté) pour laisser toute la largeur au titre.
                 if (late) {
@@ -375,7 +380,7 @@ fun TaskCard(
                         Icon(Icons.Filled.Check, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(20.dp))
                     }
                 }
-            } else if (!active && task.status == TaskStatus.DONE) {
+            } else if (!active && (task.status == TaskStatus.DONE || doneOn != null)) {
                 Icon(Icons.Filled.CheckCircle, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.padding(end = 12.dp))
             }
         }
