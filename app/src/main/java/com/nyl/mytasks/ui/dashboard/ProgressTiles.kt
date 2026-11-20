@@ -37,26 +37,22 @@ object ProgressTiles {
         fun label(kind: TaskKind) = typeOf(kind)?.label.orEmpty()
         fun color(kind: TaskKind) = (typeOf(kind)?.color ?: 0xFF607D8B).toColor()
 
-        fun hoursOf(p: Progress): String? = when {
-            p.plannedMinutes > 0 -> context.getString(R.string.progress_minutes, formatMinutes(p.doneMinutes), formatMinutes(p.plannedMinutes))
-            p.doneMinutes > 0 -> context.getString(R.string.dash_time_spent, formatMinutes(p.doneMinutes))
-            else -> null
-        }
+        // Récurrentes et ponctuelles : jauge sur le temps (durées estimées faites / prévues) ; le décompte des tâches
+        // concernées (celles qui ont une durée estimée) vient en complément, avec les mêmes tâches que la jauge.
+        fun timeTile(kind: TaskKind, p: Progress, period: String) = ProgressTile(
+            kind, label(kind), period, color(kind),
+            p.timeRatio, p.plannedMinutes == 0,
+            if (p.plannedMinutes == 0) context.getString(R.string.dash_no_estimate)
+            else context.getString(R.string.progress_minutes, formatMinutes(p.doneMinutes), formatMinutes(p.plannedMinutes)),
+            if (p.plannedMinutes == 0) null else context.getString(R.string.dash_tasks_count, p.done, p.planned),
+        )
 
         val week = context.getString(R.string.this_week)
         val pm = s.projectsMonth
         val wy = s.worksitesYear
         return listOf(
-            ProgressTile(
-                TaskKind.DOMESTIC, label(TaskKind.DOMESTIC), week, color(TaskKind.DOMESTIC),
-                s.recurring.ratio, s.recurring.planned == 0,
-                context.getString(R.string.dash_count, s.recurring.done, s.recurring.planned), hoursOf(s.recurring),
-            ),
-            ProgressTile(
-                TaskKind.ONE_OFF, label(TaskKind.ONE_OFF), week, color(TaskKind.ONE_OFF),
-                s.oneOff.ratio, s.oneOff.planned == 0,
-                context.getString(R.string.dash_count, s.oneOff.done, s.oneOff.planned), hoursOf(s.oneOff),
-            ),
+            timeTile(TaskKind.DOMESTIC, s.recurring, week),
+            timeTile(TaskKind.ONE_OFF, s.oneOff, week),
             ProgressTile(
                 TaskKind.PROJECT, label(TaskKind.PROJECT), context.getString(R.string.this_month), color(TaskKind.PROJECT),
                 if (pm.plannedMinutes <= 0) 0f else (pm.doneMinutes.toFloat() / pm.plannedMinutes).coerceIn(0f, 1f),

@@ -102,7 +102,7 @@ class ProjectAndDashboardTest {
         DashboardCalculator.compute(tasks, events, { kinds[it] }, d(today))
 
     @Test fun dashboard_recurringTaskAppearsOnItsDay() {
-        val s = dash(listOf(trash), emptyList(), "2026-11-17")
+        val s = dash(listOf(trash.copy(estimatedMinutes = 5)), emptyList(), "2026-11-17")
         assertEquals(listOf("t1"), s.todayItems.filter { it.kind == TaskKind.DOMESTIC }.map { it.task.id })
         assertEquals(0, s.overdueCount)
         assertEquals(0, s.domesticDone)
@@ -110,7 +110,7 @@ class ProjectAndDashboardTest {
     }
 
     @Test fun dashboard_weeklyProgressAfterCompletion() {
-        val out = TaskLogic.complete(trash, d("2026-11-17"))
+        val out = TaskLogic.complete(trash.copy(estimatedMinutes = 5), d("2026-11-17"))
         val ev = TaskEvent("e1", "t1", EventKind.DONE, d("2026-11-17"))
         val s = dash(listOf(out.task), listOf(ev), "2026-11-17")
         assertEquals(1, s.domesticDone)
@@ -137,7 +137,7 @@ class ProjectAndDashboardTest {
         assertEquals(2, s.recurring.planned)
         assertEquals(30, s.recurring.doneMinutes)
         assertEquals(60, s.recurring.plannedMinutes)
-        assertEquals(0.5f, s.recurring.ratio, 0.0001f)
+        assertEquals(0.5f, s.recurring.timeRatio, 0.0001f)
         assertEquals(0, s.oneOff.done)
         assertEquals(1, s.oneOff.planned)
         assertEquals(20, s.oneOff.plannedMinutes)
@@ -189,21 +189,55 @@ class ProjectAndDashboardTest {
         assertEquals(DeadlineLevel.UNDER_3_MONTHS, levels["w2"])
         assertEquals(DeadlineLevel.UNDER_6_MONTHS, levels["w3"])
         assertNull(levels["w1"])
-        assertTrue(s.todayItems.any { it.task.id == "w1" }) // priorité 4 => « chantier prioritaire »
+        assertTrue(s.weekItems.any { it.task.id == "w1" }) // priorité 4 => « chantier prioritaire »
     }
 
-    @Test fun streakAndCompletionRate() {
-        val events = listOf(
-            TaskEvent("a", "t1", EventKind.DONE, d("2026-11-17")),
-            TaskEvent("b", "t1", EventKind.DONE, d("2026-11-16")),
-            TaskEvent("c", "w1", EventKind.SESSION, d("2026-11-15")),
-            TaskEvent("d", "t1", EventKind.DONE, d("2026-11-12")),
-        )
-        assertEquals(3, DashboardCalculator.streak(events, d("2026-11-17")))
-        assertEquals(2, DashboardCalculator.streak(events.drop(1), d("2026-11-17")))
-        val rate = DashboardCalculator.completionRate(emptyList(), events, { null }, d("2026-11-17"), 7)
-        assertNotNull(rate)
-        assertEquals(100, rate)
+    // --- Jauges sur le temps (reco 12) ---
+
+    @Test fun gauges_areTimeBased_andIgnoreTasksWithoutEstimate() {
+        // Poubelle (30 min, faite lundi, prochaine mardi) + arrosage sans durée : seul le premier compte.
+        val timed = trash.copy(estimatedMinutes = 30)
+        val untimed = trash.copy(id = "t7", title = "Arroser", estimatedMinutes = null)
+        val ev = listOf(TaskEvent("e1", "t1", EventKind.DONE, d("2026-11-16")), TaskEvent("e2", "t7", EventKind.DONE, d("2026-11-16")))
+        val s = dash(listOf(timed, untimed), ev, "2026-11-17")
+        assertEquals(30, s.recurring.doneMinutes)
+        assertEquals(60, s.recurring.plannedMinutes) // fait lundi + prévue mardi : 2 × 30 min
+        assertEquals(1, s.recurring.done)             // les compteurs affichés avec la jauge excluent aussi la tâche sans durée
+        assertEquals(2, s.recurring.planned)
+        assertEquals(0.5f, s.recurring.timeRatio, 0.0001f)
+    }
+
+    @Test fun gauges_withoutAnyEstimate_areEmpty() {
+        val s = dash(listOf(trash, parcel), emptyList(), "2026-11-17")
+        assertEquals(0, s.recurring.plannedMinutes)
+        assertEquals(0f, s.recurring.timeRatio, 0f)
+        assertEquals(0, s.oneOff.plannedMinutes)
+    }
+
+    @Test fun gauges_timeWeightsLongTasksMoreThanShortOnes() {
+        // 2 tâches ponctuelles : une courte faite (10 min) et une longue à faire (50 min) → 10 / 60, pas 1 / 2.
+        val short = parcel.copy(id = "o1", dueDate = d("2026-11-17"), estimatedMinutes = 10, status = TaskStatus.DONE, closedAt = d("2026-11-17"))
+        val long = parcel.copy(id = "o2", dueDate = d("2026-11-19"), estimatedMinutes = 50)
+        val ev = TaskEvent("e1", "o1", EventKind.DONE, d("2026-11-17"))
+        val s = dash(listOf(short, long), listOf(ev), "2026-11-17")
+        assertEquals(10, s.oneOff.doneMinutes)
+        assertEquals(60, s.oneOff.plannedMinutes)
+        assertEquals(10f / 60f, s.oneOff.timeRatio, 0.0001f)
+    }
+
+    // --- Projets et travaux hors de « À faire aujourd'hui » (reco 13) ---
+
+    @Test fun projectsAndWorksites_areListedUnderThisWeek_notToday() {
+        val s = dash(listOf(trash, spanish, salon), emptyList(), "2026-11-17")
+        assertEquals(listOf("t1"), s.todayItems.map { it.task.id }) // seule la tâche récurrente à échéance du jour
+        // En bas de page, dans « À faire cette semaine » : projets puis travaux.
+        assertEquals(listOf("p1", "w1"), s.weekItems.map { it.task.id })
+        assertTrue(s.todayItems.none { it.kind == TaskKind.PROJECT || it.kind == TaskKind.WORKSITE })
+    }
+
+    @Test fun thisWeek_ordersRecurringAndOneOffByDueDate_thenProjects_thenWorksites() {
+        val s = dash(listOf(salon, spanish, parcel, trash.copy(id = "t4", dueDate = d("2026-11-18"))), emptyList(), "2026-11-17")
+        assertEquals(listOf("t4", "t2", "p1", "w1"), s.weekItems.map { it.task.id })
     }
 
     @Test fun backup_roundTripIsLossless() {

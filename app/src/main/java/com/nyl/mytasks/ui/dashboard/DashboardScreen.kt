@@ -121,7 +121,7 @@ fun DashboardScreen(
                 DashRow(item, typeById, roomNames, s, onOpenTask) { pending = vm.beginComplete(item.task) }
             }
 
-            // --- À faire cette semaine (tâches récurrentes et ponctuelles) ---
+            // --- À faire cette semaine : récurrentes et ponctuelles, puis projets et travaux (sans date du jour) ---
             item(key = "week-title") { SectionTitle(stringResource(R.string.dash_later_this_week), s.weekItems.size) }
             if (s.weekItems.isEmpty()) item(key = "week-empty") { EmptyState(stringResource(R.string.dash_week_empty)) }
             items(s.weekItems, key = { "week-" + it.task.id }) { item ->
@@ -132,9 +132,6 @@ fun DashboardScreen(
             if (s.worksiteSessionsThisWeek > 0 || s.worksiteDeadlines.isNotEmpty()) {
                 item(key = "worksites") { WorksiteCard(s, types.firstOrNull { it.kind == TaskKind.WORKSITE }) }
             }
-
-            // --- Statistiques ---
-            item(key = "stats") { Stats(s) }
         }
     }
 
@@ -262,39 +259,5 @@ private fun WorksiteCard(s: DashboardState, type: TaskType?) {
                 }
             }
         }
-    }
-}
-
-// --- Statistiques ---
-
-@Composable
-private fun Stats(s: DashboardState) {
-    // Carte indigo pleine, texte blanc (contraste conservé en mode sombre via les couleurs fixes).
-    Card(
-        Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(28.dp),
-        colors = CardDefaults.cardColors(containerColor = Palette.Indigo, contentColor = Color.White),
-    ) {
-        Column(Modifier.padding(20.dp)) {
-            Text(stringResource(R.string.dash_stats), style = MaterialTheme.typography.labelLarge, color = Palette.OnIndigoMuted)
-            Row(Modifier.padding(top = 12.dp).fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                StatBlock(s.rate7?.let { "$it %" } ?: "—", stringResource(R.string.stat_7_days), Modifier.weight(1f))
-                StatBlock(s.rate30?.let { "$it %" } ?: "—", stringResource(R.string.stat_30_days), Modifier.weight(1f))
-                StatBlock("${s.streak}", pluralStringResource(R.plurals.stat_streak, s.streak), Modifier.weight(1.1f), highlighted = true)
-            }
-        }
-    }
-}
-
-@Composable
-private fun StatBlock(value: String, label: String, modifier: Modifier = Modifier, highlighted: Boolean = false) {
-    Column(
-        modifier.then(
-            if (highlighted) Modifier.clip(RoundedCornerShape(18.dp)).background(Color.White.copy(alpha = 0.16f)).padding(horizontal = 12.dp, vertical = 8.dp)
-            else Modifier.padding(vertical = 8.dp),
-        ),
-    ) {
-        Text(value, style = MaterialTheme.typography.headlineMedium, color = Color.White, maxLines = 1)
-        Text(label, style = MaterialTheme.typography.labelMedium, color = Palette.OnIndigoMuted, maxLines = 2)
     }
 }

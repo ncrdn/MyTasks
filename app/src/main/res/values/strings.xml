@@ -221,6 +221,8 @@
     <string name="dash_overdue">Retards</string>
     <string name="dash_overdue_empty">Aucun retard, bravo !</string>
     <string name="dash_progress">Avancement</string>
+    <string name="dash_no_estimate">Aucune durée estimée</string>
+    <string name="dash_tasks_count">%1$d / %2$d tâches</string>
     <string name="settings_widget">Widget d\'avancement</string>
     <string name="settings_widget_help">Ajouter les jauges à l\'écran d\'accueil</string>
     <string name="msg_widget_unsupported">Votre écran d\'accueil ne permet pas cet ajout : choisissez le widget « Avancement » dans la liste des widgets.</string>

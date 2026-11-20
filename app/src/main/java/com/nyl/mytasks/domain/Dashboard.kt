@@ -26,8 +26,11 @@ data class Progress(
     val doneMinutes: Int,
     val plannedMinutes: Int,
 ) {
-    /** Taux d'accomplissement 0..1 (1 si rien n'est prévu). */
+    /** Taux d'accomplissement 0..1 sur le nombre d'éléments (1 si rien n'est prévu). */
     val ratio: Float get() = if (planned <= 0) 1f else (done.toFloat() / planned).coerceIn(0f, 1f)
+
+    /** Taux d'accomplissement 0..1 sur le temps : durées faites / durées prévues (0 si aucune durée n'est connue). */
+    val timeRatio: Float get() = if (plannedMinutes <= 0) 0f else (doneMinutes.toFloat() / plannedMinutes).coerceIn(0f, 1f)
 }
 
 data class DashboardState(
@@ -47,10 +50,6 @@ data class DashboardState(
     val projects: List<DashItem>,
     val worksiteSessionsThisWeek: Int,
     val worksiteDeadlines: List<WorksiteDeadline>,
-    /** Taux de complétion en % (null si aucune donnée sur la période). */
-    val rate7: Int?,
-    val rate30: Int?,
-    val streak: Int,
 ) {
     val overdueCount: Int get() = overdueItems.size
     val domesticDone: Int get() = recurring.done
@@ -84,7 +83,8 @@ object DashboardCalculator {
             val taskEvents = eventsByTask[task.id].orEmpty()
             val est = task.estimatedMinutes ?: 0
 
-            if (kind == TaskKind.DOMESTIC || kind == TaskKind.ONE_OFF) {
+            // Jauges en temps : une tâche sans durée estimée est exclue du calcul (et du décompte affiché avec).
+            if ((kind == TaskKind.DOMESTIC || kind == TaskKind.ONE_OFF) && est > 0) {
                 val done = taskEvents.count { it.kind == EventKind.DONE && it.date in weekStart..weekEnd }
                 val pending = pendingThisWeek(task, weekEnd)
                 val add = Progress(done, done + pending, done * est, (done + pending) * est)
@@ -101,7 +101,7 @@ object DashboardCalculator {
                         val since = month.lateSince
                         overdue += item.copy(daysLate = if (since == null) 1 else ChronoUnit.DAYS.between(since, today).toInt().coerceAtLeast(1))
                     }
-                    if (month.remaining > 0) todayItems += item
+                    if (month.remaining > 0) weekItems += item
                 }
                 else -> {
                     if (task.paused) continue
@@ -109,7 +109,7 @@ object DashboardCalculator {
                     if (TaskLogic.isOverdue(task, kind, today)) {
                         overdue += DashItem(task, kind, daysLate = TaskLogic.daysLate(task, today))
                     } else if (kind == TaskKind.WORKSITE) {
-                        if ((task.priority ?: 0) >= 4) todayItems += DashItem(task, kind)
+                        if ((task.priority ?: 0) >= 4) weekItems += DashItem(task, kind)
                     } else if (due == today) {
                         todayItems += DashItem(task, kind)
                     } else if (due != null && due.isAfter(today) && !due.isAfter(weekEnd)) {
@@ -147,7 +147,10 @@ object DashboardCalculator {
             today = today,
             todayItems = todayItems.sortedWith(compareBy({ it.kind.ordinal }, { it.task.title.lowercase() })),
             overdueItems = overdue.sortedByDescending { it.daysLate },
-            weekItems = weekItems.sortedWith(compareBy({ it.task.dueDate }, { it.task.title.lowercase() })),
+            // Récurrentes et ponctuelles par échéance, puis les projets, puis les travaux (sans date du jour).
+            weekItems = weekItems.sortedWith(
+                compareBy<DashItem>({ weekRank(it.kind) }, { it.task.dueDate?.toEpochDay() ?: Long.MAX_VALUE }, { it.task.title.lowercase() }),
+            ),
             recurring = recurring,
             oneOff = oneOff,
             projectsMonth = projectsMonth,
@@ -155,10 +158,13 @@ object DashboardCalculator {
             projects = projects.sortedBy { it.task.title.lowercase() },
             worksiteSessionsThisWeek = sessionsThisWeek,
             worksiteDeadlines = deadlines.sortedBy { it.daysLeft },
-            rate7 = completionRate(tasks, events, kindOf, today, 7),
-            rate30 = completionRate(tasks, events, kindOf, today, 30),
-            streak = streak(events, today),
         )
+    }
+
+    private fun weekRank(kind: TaskKind) = when (kind) {
+        TaskKind.DOMESTIC, TaskKind.ONE_OFF -> 0
+        TaskKind.PROJECT -> 1
+        TaskKind.WORKSITE -> 2
     }
 
     private operator fun Progress.plus(o: Progress) =
@@ -176,40 +182,6 @@ object DashboardCalculator {
         while (!d.isAfter(weekEnd) && count < 20) {
             count++
             d = RecurrenceEngine.next(rule, d)
-        }
-        return count
-    }
-
-    /** Terminé / (terminé + ignoré + manqué) sur les [days] derniers jours. */
-    fun completionRate(
-        tasks: List<Task>,
-        events: List<TaskEvent>,
-        kindOf: (String) -> TaskKind?,
-        today: LocalDate,
-        days: Int,
-    ): Int? {
-        val from = today.minusDays((days - 1).toLong())
-        val done = events.count { it.kind == EventKind.DONE && it.date in from..today }
-        val skipped = events.count { it.kind == EventKind.SKIPPED && it.date in from..today }
-        val missed = tasks.count { t ->
-            val kind = kindOf(t.typeId)
-            val due = t.dueDate
-            kind != null && kind != TaskKind.PROJECT && due != null &&
-                TaskLogic.isOverdue(t, kind, today) && due in from..today.minusDays(1)
-        }
-        val total = done + skipped + missed
-        return if (total == 0) null else (done * 100) / total
-    }
-
-    /** Jours consécutifs avec au moins une tâche faite ou une session (aujourd'hui facultatif). */
-    fun streak(events: List<TaskEvent>, today: LocalDate): Int {
-        val active = events.filter { it.kind == EventKind.DONE || it.kind == EventKind.SESSION }
-            .map { it.date }.toSet()
-        var d = if (today in active) today else today.minusDays(1)
-        var count = 0
-        while (d in active) {
-            count++
-            d = d.minusDays(1)
         }
         return count
     }
