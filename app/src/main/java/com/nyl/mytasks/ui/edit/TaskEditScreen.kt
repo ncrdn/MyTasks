@@ -137,6 +137,7 @@ fun TaskEditScreen(
             targetYear = if (today.year in yearsWithRoom) today.year else yearsWithRoom.firstOrNull()
         }
     }
+    fun pointsText(n: Int) = context.resources.getQuantityString(R.plurals.points_count, n, n)
     fun freeIn(y: Int) = QuotaLogic.available(y, QuotaLogic.quotaFor(y, quotas, settings.defaultYearQuota), worksites, existing?.id)
     val yearOk = kind != TaskKind.WORKSITE || targetYear == null || targetYear in yearsWithRoom
 
@@ -283,7 +284,7 @@ fun TaskEditScreen(
                         // (même calcul que l'encart d'année de l'onglet Travaux).
                         if (!QuotaLogic.canAttach(points, freeIn(today.year))) {
                             Text(
-                                stringResource(R.string.year_short, today.year, freeIn(today.year).coerceAtLeast(0), points),
+                                stringResource(R.string.year_short, today.year, pointsText(freeIn(today.year).coerceAtLeast(0)), pointsText(points)),
                                 style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant,
                             )
                         }
@@ -297,7 +298,7 @@ fun TaskEditScreen(
                         )
                         if (!yearOk) {
                             Text(
-                                stringResource(R.string.year_short, selectedYear ?: today.year, (selectedYear?.let { freeIn(it) } ?: 0).coerceAtLeast(0), points),
+                                stringResource(R.string.year_short, selectedYear ?: today.year, pointsText((selectedYear?.let { freeIn(it) } ?: 0).coerceAtLeast(0)), pointsText(points)),
                                 style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.error,
                             )
                         }
