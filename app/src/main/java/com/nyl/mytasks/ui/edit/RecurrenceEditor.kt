@@ -40,6 +40,8 @@ class RecurrenceForm(start: LocalDate) {
     var mode by mutableStateOf(RecurrenceMode.WEEKLY)
     var everyWeeks by mutableStateOf("1")
     var days by mutableStateOf(setOf(start.dayOfWeek))
+    /** « Tous les N mois » des récurrences mensuelles (jour du mois ou Nᵉ jour de semaine). */
+    var everyMonths by mutableStateOf("1")
     var monthDay by mutableStateOf(start.dayOfMonth.toString())
     var nth by mutableStateOf(((start.dayOfMonth - 1) / 7 + 1).coerceAtMost(4))
     var nthDay by mutableStateOf(start.dayOfWeek)
@@ -51,8 +53,10 @@ class RecurrenceForm(start: LocalDate) {
         when (rule) {
             null -> mode = RecurrenceMode.NONE
             is Recurrence.Weekly -> { mode = RecurrenceMode.WEEKLY; everyWeeks = rule.everyWeeks.toString(); days = setOfNotNull(rule.days.minByOrNull { it.value }) }
-            is Recurrence.MonthlyDay -> { mode = RecurrenceMode.MONTHLY_DAY; monthDay = rule.dayOfMonth.toString() }
-            is Recurrence.MonthlyNthWeekday -> { mode = RecurrenceMode.MONTHLY_NTH; nth = rule.nth; nthDay = rule.dayOfWeek }
+            is Recurrence.MonthlyDay -> { mode = RecurrenceMode.MONTHLY_DAY; everyMonths = rule.everyMonths.toString(); monthDay = rule.dayOfMonth.toString() }
+            is Recurrence.MonthlyNthWeekday -> {
+                mode = RecurrenceMode.MONTHLY_NTH; everyMonths = rule.everyMonths.toString(); nth = rule.nth; nthDay = rule.dayOfWeek
+            }
             is Recurrence.Yearly -> { mode = RecurrenceMode.YEARLY; yearDay = rule.day.toString(); yearMonth = rule.month }
             is Recurrence.EveryDays -> { mode = RecurrenceMode.CUSTOM; customDays = rule.days.toString() }
         }
@@ -63,11 +67,15 @@ class RecurrenceForm(start: LocalDate) {
         RecurrenceMode.NONE -> null
         RecurrenceMode.WEEKLY ->
             if (days.isEmpty()) null else Recurrence.Weekly((everyWeeks.toIntOrNull() ?: 1).coerceAtLeast(1), days)
-        RecurrenceMode.MONTHLY_DAY -> monthDay.toIntOrNull()?.takeIf { it in 1..31 }?.let { Recurrence.MonthlyDay(1, it) }
-        RecurrenceMode.MONTHLY_NTH -> Recurrence.MonthlyNthWeekday(1, nth, nthDay)
+        RecurrenceMode.MONTHLY_DAY ->
+            monthDay.toIntOrNull()?.takeIf { it in 1..31 }?.let { Recurrence.MonthlyDay(months(), it) }
+        RecurrenceMode.MONTHLY_NTH -> Recurrence.MonthlyNthWeekday(months(), nth, nthDay)
         RecurrenceMode.YEARLY -> yearDay.toIntOrNull()?.takeIf { it in 1..31 }?.let { Recurrence.Yearly(yearMonth, it) }
         RecurrenceMode.CUSTOM -> customDays.toIntOrNull()?.takeIf { it >= 1 }?.let { Recurrence.EveryDays(it) }
     }
+
+    /** Intervalle en mois saisi (au moins 1, comme « toutes les N semaines »). */
+    private fun months(): Int = (everyMonths.toIntOrNull() ?: 1).coerceAtLeast(1)
 
     val valid: Boolean get() = mode == RecurrenceMode.NONE || toRule() != null
 }
@@ -98,22 +106,35 @@ fun RecurrenceEditor(form: RecurrenceForm) {
                     }
                 }
             }
-            RecurrenceMode.MONTHLY_DAY -> NumberField(
-                label = stringResource(R.string.rec_day_of_month), value = form.monthDay,
-                onChange = { form.monthDay = it }, modifier = Modifier.fillMaxWidth(),
-                isError = form.monthDay.toIntOrNull()?.let { it !in 1..31 } ?: true,
-            )
-            RecurrenceMode.MONTHLY_NTH -> Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                DropdownField(
-                    label = stringResource(R.string.rec_nth),
-                    selectedText = nthLabel(form.nth), options = listOf(1, 2, 3, 4, -1), optionText = { nthLabel(it) },
-                    onSelect = { form.nth = it }, modifier = Modifier.weight(1f),
+            RecurrenceMode.MONTHLY_DAY -> {
+                // Comme pour l'hebdomadaire : « tous les N mois » (2, 3, 4… tous les N mois).
+                NumberField(
+                    label = stringResource(R.string.rec_every_n_months), value = form.everyMonths,
+                    onChange = { form.everyMonths = it }, modifier = Modifier.fillMaxWidth(),
                 )
-                DropdownField(
-                    label = stringResource(R.string.rec_weekday),
-                    selectedText = dayName(form.nthDay), options = DayOfWeek.entries, optionText = { dayName(it) },
-                    onSelect = { form.nthDay = it }, modifier = Modifier.weight(1f),
+                NumberField(
+                    label = stringResource(R.string.rec_day_of_month), value = form.monthDay,
+                    onChange = { form.monthDay = it }, modifier = Modifier.fillMaxWidth(),
+                    isError = form.monthDay.toIntOrNull()?.let { it !in 1..31 } ?: true,
                 )
+            }
+            RecurrenceMode.MONTHLY_NTH -> {
+                NumberField(
+                    label = stringResource(R.string.rec_every_n_months), value = form.everyMonths,
+                    onChange = { form.everyMonths = it }, modifier = Modifier.fillMaxWidth(),
+                )
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    DropdownField(
+                        label = stringResource(R.string.rec_nth),
+                        selectedText = nthLabel(form.nth), options = listOf(1, 2, 3, 4, -1), optionText = { nthLabel(it) },
+                        onSelect = { form.nth = it }, modifier = Modifier.weight(1f),
+                    )
+                    DropdownField(
+                        label = stringResource(R.string.rec_weekday),
+                        selectedText = dayName(form.nthDay), options = DayOfWeek.entries, optionText = { dayName(it) },
+                        onSelect = { form.nthDay = it }, modifier = Modifier.weight(1f),
+                    )
+                }
             }
             RecurrenceMode.YEARLY -> Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 NumberField(

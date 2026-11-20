@@ -203,6 +203,7 @@
     <string name="rec_yearly">Annuelle</string>
     <string name="rec_custom">Personnalisée</string>
     <string name="rec_every_n_weeks">Toutes les N semaines</string>
+    <string name="rec_every_n_months">Tous les N mois</string>
     <string name="rec_day_of_month">Jour du mois</string>
     <string name="rec_nth">Rang</string>
     <string name="rec_weekday">Jour</string>
@@ -216,6 +217,7 @@
     <string name="rec_monthly_day_desc">Le %1$d du mois</string>
     <string name="rec_monthly_day_n_desc">Tous les %1$d mois, le %2$d</string>
     <string name="rec_monthly_nth_desc">Le %1$s %2$s du mois</string>
+    <string name="rec_monthly_nth_n_desc">Tous les %1$d mois : le %2$s %3$s</string>
     <string name="rec_yearly_desc">Chaque année le %1$d %2$s</string>
     <string name="rec_custom_desc">Tous les %1$d jours</string>
 

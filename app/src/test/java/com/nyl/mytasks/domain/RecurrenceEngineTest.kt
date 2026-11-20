@@ -83,6 +83,26 @@ class RecurrenceEngineTest {
         assertEquals(d("2026-12-27"), RecurrenceEngine.next(Recurrence.EveryDays(40), d("2026-11-17")))
     }
 
+    // --- « Tous les N mois » (reco 19) ---
+
+    @Test fun monthlyDay_everyTwoThreeFourMonths() {
+        assertEquals(d("2026-03-15"), RecurrenceEngine.next(Recurrence.MonthlyDay(2, 15), d("2026-01-15")))
+        assertEquals(d("2026-04-15"), RecurrenceEngine.next(Recurrence.MonthlyDay(3, 15), d("2026-01-15")))
+        assertEquals(d("2026-05-15"), RecurrenceEngine.next(Recurrence.MonthlyDay(4, 15), d("2026-01-15")))
+    }
+
+    @Test fun monthlyDay_everyNMonths_acrossYearEndAndShortMonths() {
+        assertEquals(d("2027-02-28"), RecurrenceEngine.next(Recurrence.MonthlyDay(3, 31), d("2026-11-30")))
+        assertEquals(d("2027-01-31"), RecurrenceEngine.next(Recurrence.MonthlyDay(2, 31), d("2026-11-30")))
+    }
+
+    @Test fun monthlyNthWeekday_everyTwoMonths() {
+        // 1er lundi du mois, un mois sur deux : janvier → mars.
+        val rule = Recurrence.MonthlyNthWeekday(2, 1, DayOfWeek.MONDAY)
+        assertEquals(d("2026-03-02"), RecurrenceEngine.next(rule, d("2026-01-05")))
+        assertEquals(d("2026-05-04"), RecurrenceEngine.next(rule, d("2026-03-02")))
+    }
+
     @Test fun occurrencesBetween_listsAll() {
         val rule = Recurrence.Weekly(1, setOf(DayOfWeek.TUESDAY))
         assertEquals(

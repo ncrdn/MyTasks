@@ -51,7 +51,8 @@ fun describeRecurrence(context: Context, r: Recurrence): String = when (r) {
         else context.getString(R.string.rec_monthly_day_n_desc, r.everyMonths, r.dayOfMonth)
     is Recurrence.MonthlyNthWeekday -> {
         val nth = if (r.nth < 0) context.getString(R.string.rec_last) else context.getString(R.string.rec_nth_value, r.nth)
-        context.getString(R.string.rec_monthly_nth_desc, nth, dayName(r.dayOfWeek))
+        if (r.everyMonths <= 1) context.getString(R.string.rec_monthly_nth_desc, nth, dayName(r.dayOfWeek))
+        else context.getString(R.string.rec_monthly_nth_n_desc, r.everyMonths, nth, dayName(r.dayOfWeek))
     }
     is Recurrence.Yearly -> context.getString(
         R.string.rec_yearly_desc, r.day,
