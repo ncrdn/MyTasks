@@ -180,7 +180,6 @@ fun TaskDetailScreen(
                             Field(stringResource(R.string.field_monthly_goal), stringResource(R.string.per_month, formatMinutes(it)))
                         }
                     }
-                    Field(stringResource(R.string.field_created), task.createdAt.formatLong())
                     task.closedAt?.let { Field(stringResource(R.string.field_closed), it.formatLong()) }
                     if (task.notes.isNotBlank()) Field(stringResource(R.string.field_notes), task.notes)
                 }
