@@ -63,6 +63,41 @@ class QuotaLogicTest {
         assertEquals(listOf(2027, 2028), years)
     }
 
+    @Test fun edgeCase_remainderOfOnePoint_acceptsATaskOfOnePoint() {
+        // Quota 47, 46 points engagés (dont une tâche terminée) : il reste 1 point.
+        val tasks = listOf(
+            work("done", 10, 2026, TaskStatus.DONE), work("a", 10, 2026), work("b", 10, 2026), work("c", 10, 2026), work("d", 6, 2026),
+        )
+        val quotas = listOf(YearQuota(2026, 47))
+        val summary = QuotaLogic.summary(2026, 47, tasks)
+        assertEquals(46, summary.committed)
+        assertEquals(1, summary.remaining)
+        val free = QuotaLogic.available(2026, 47, tasks)
+        assertEquals(summary.remaining, free) // l'encart et le blocage reposent sur le même calcul
+        // Une tâche de 1 point (reliquat = coût) se rattache ; une tâche de 2 points non.
+        assertTrue(QuotaLogic.canAttach(1, free))
+        assertFalse(QuotaLogic.canAttach(2, free))
+        assertTrue(2026 in QuotaLogic.yearsWithRoom(1, 2026, 2027, quotas, 45, tasks))
+        assertFalse(2026 in QuotaLogic.yearsWithRoom(2, 2026, 2027, quotas, 45, tasks))
+    }
+
+    @Test fun edgeCase_exactRemainder_forEveryWeight() {
+        for (cost in 1..10) {
+            val tasks = listOf(work("x", 45 - cost, 2026))
+            val free = QuotaLogic.available(2026, 45, tasks)
+            assertEquals(cost, free)
+            assertTrue("une tâche de $cost pt(s) doit tenir dans un reliquat de $free", QuotaLogic.canAttach(cost, free))
+            assertFalse(QuotaLogic.canAttach(cost + 1, free))
+        }
+    }
+
+    @Test fun editingATaskOfOnePoint_inAFullYear_canStayAttached() {
+        // Année pleine (45/45) dont une tâche de 1 point : en la modifiant, ses propres points ne comptent pas contre elle.
+        val tasks = listOf(work("big", 44, 2026), work("small", 1, 2026))
+        val free = QuotaLogic.available(2026, 45, tasks, excludingTaskId = "small")
+        assertTrue(QuotaLogic.canAttach(1, free))
+    }
+
     @Test fun backup_roundTrip_keepsQuotas() {
         val data = BackupData(types = emptyList(), rooms = emptyList(), tasks = emptyList(), events = emptyList(), yearQuotas = listOf(YearQuota(2026, 45)))
         assertEquals(listOf(YearQuota(2026, 45)), BackupCodec.decode(BackupCodec.encode(data)).yearQuotas)

@@ -54,6 +54,13 @@ object QuotaLogic {
     fun available(year: Int, quota: Int, worksites: List<Task>, excludingTaskId: String? = null): Int =
         quota - worksites.filter { it.id != excludingTaskId && yearOf(it) == year && consumes(it) }.sumOf(::points)
 
+    /**
+     * Rattachement possible tant que le poids de la tâche est inférieur ou égal au reliquat (bornes incluses :
+     * un reliquat de 1 point accepte une tâche de 1 point). Seule règle de décision, partagée par l'encart
+     * d'année, la liste des années proposées et le message de refus.
+     */
+    fun canAttach(points: Int, free: Int): Boolean = points <= free
+
     /** Années (à partir de [fromYear]) où il reste au moins [points] points : celles où le rattachement est possible. */
     fun yearsWithRoom(
         points: Int,
@@ -64,6 +71,6 @@ object QuotaLogic {
         worksites: List<Task>,
         excludingTaskId: String? = null,
     ): List<Int> = (fromYear..toYear).filter { y ->
-        available(y, quotaFor(y, quotas, default), worksites, excludingTaskId) >= points
+        canAttach(points, available(y, quotaFor(y, quotas, default), worksites, excludingTaskId))
     }
 }

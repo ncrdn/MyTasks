@@ -102,6 +102,7 @@ fun TaskEditScreen(
     var priority by remember { mutableStateOf(existing?.priority ?: 3) }
     // Année de réalisation (null = en attente) ; une année n'est proposée que s'il y reste assez de points d'effort.
     var targetYear by remember { mutableStateOf<Int?>(if (existing != null) existing.dueDate?.year else today.year) }
+    var yearTouched by remember { mutableStateOf(existing != null) }
     val allTasks by vm.tasks.collectAsStateWithLifecycle()
     val quotas by vm.yearQuotas.collectAsStateWithLifecycle()
     val settings by vm.settings.collectAsStateWithLifecycle()
@@ -128,10 +129,12 @@ fun TaskEditScreen(
         if (kind != TaskKind.WORKSITE) emptyList() else
             QuotaLogic.yearsWithRoom(points, firstYear, today.year + 10, quotas, settings.defaultYearQuota, worksites, existing?.id)
     }
-    // Nouvelle tâche : si l'année proposée n'a plus assez de points, on choisit la première qui en a (ou l'attente).
+    // Nouvelle tâche : tant que l'utilisateur n'a pas choisi d'année, on propose l'année en cours si elle a assez de
+    // points, sinon la première qui en a (ou l'attente). Réévalué à chaque changement de poids : baisser le poids
+    // à 1 point ramène l'année en cours dès qu'il y reste 1 point.
     LaunchedEffect(yearsWithRoom) {
-        if (kind == TaskKind.WORKSITE && isNew && targetYear != null && targetYear !in yearsWithRoom) {
-            targetYear = yearsWithRoom.firstOrNull()
+        if (kind == TaskKind.WORKSITE && isNew && !yearTouched) {
+            targetYear = if (today.year in yearsWithRoom) today.year else yearsWithRoom.firstOrNull()
         }
     }
     fun freeIn(y: Int) = QuotaLogic.available(y, QuotaLogic.quotaFor(y, quotas, settings.defaultYearQuota), worksites, existing?.id)
@@ -252,7 +255,7 @@ fun TaskEditScreen(
                             PointsBadge(points, MaterialTheme.colorScheme.primary)
                         }
                         Slider(
-                            value = effort, onValueChange = { effort = it.toInt().toFloat() }, valueRange = 1f..10f, steps = 8,
+                            value = effort, onValueChange = { effort = Math.round(it).toFloat() }, valueRange = 1f..10f, steps = 8,
                             colors = SliderDefaults.colors(
                                 thumbColor = MaterialTheme.colorScheme.primary,
                                 activeTrackColor = MaterialTheme.colorScheme.primary,
@@ -273,9 +276,17 @@ fun TaskEditScreen(
                             else stringResource(R.string.year_option, selectedYear, (freeIn(selectedYear) - points).coerceAtLeast(0)),
                             options = listOf<Int?>(null) + yearsWithRoom,
                             optionText = { y -> if (y == null) stringResource(R.string.year_not_attached) else stringResource(R.string.year_option, y, freeIn(y) - points) },
-                            onSelect = { targetYear = it },
+                            onSelect = { targetYear = it; yearTouched = true },
                             icon = Icons.Filled.CalendarMonth,
                         )
+                        // L'année en cours est proposée en premier : si le poids dépasse son reliquat, on dit pourquoi
+                        // (même calcul que l'encart d'année de l'onglet Travaux).
+                        if (!QuotaLogic.canAttach(points, freeIn(today.year))) {
+                            Text(
+                                stringResource(R.string.year_short, today.year, freeIn(today.year).coerceAtLeast(0), points),
+                                style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                        }
                         Text(
                             if (yearsWithRoom.isEmpty()) stringResource(R.string.year_attach_none)
                             else stringResource(
@@ -286,7 +297,7 @@ fun TaskEditScreen(
                         )
                         if (!yearOk) {
                             Text(
-                                stringResource(R.string.year_no_room, selectedYear?.let { freeIn(it) } ?: 0),
+                                stringResource(R.string.year_short, selectedYear ?: today.year, (selectedYear?.let { freeIn(it) } ?: 0).coerceAtLeast(0), points),
                                 style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.error,
                             )
                         }

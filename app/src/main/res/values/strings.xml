@@ -84,7 +84,7 @@
     <string name="year_room_item">%1$d : %2$d pts</string>
     <string name="year_not_attached">Non rattaché (en attente)</string>
     <string name="year_option">%1$d · %2$d pts restants</string>
-    <string name="year_no_room">Pas assez de points disponibles pour cette année (restants : %1$d).</string>
+    <string name="year_short">En %1$d, il reste %2$d pts et cette tâche en demande %3$d.</string>
     <string name="year_attach_none">Aucune année n\'a assez de points : la tâche restera en attente.</string>
     <string name="year_room_hint">Points disponibles : %1$s</string>
     <string name="field_points">Poids</string>
